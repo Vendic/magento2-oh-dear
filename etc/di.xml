@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <!-- API classes -->
+    <preference for="Vendic\OhDear\Api\Data\CheckResultInterface" type="Vendic\OhDear\Model\CheckResult"/>
+    <preference for="Vendic\OhDear\Api\CheckListInterface" type="Vendic\OhDear\Model\CheckList"/>
+
+    <!-- Check collection -->
+    <type name="Vendic\OhDear\Api\CheckListInterface">
+        <arguments>
+            <argument name="checks" xsi:type="array">
+                <item name="cpu_load" xsi:type="object">Vendic\OhDear\Checks\CpuLoad</item>
+                <item name="redis_connection" xsi:type="object">Vendic\OhDear\Checks\RedisConnection</item>
+                <item name="diskspace" xsi:type="object">Vendic\OhDear\Checks\Diskspace</item>
+                <item name="elasticsuite_elasticsearch" xsi:type="object">Vendic\OhDear\Checks\ElasticSuite</item>
+                <item name="elasticsuite_elasticsearch_shards" xsi:type="object">Vendic\OhDear\Checks\ElasticSuiteShards</item>
+                <item name="db_connection_count" xsi:type="object">Vendic\OhDear\Checks\DatabaseConnectionCount</item>
+                <item name="php_fpm_count" xsi:type="object">Vendic\OhDear\Checks\PhpFpmCount</item>
+                <item name="public_sql" xsi:type="object">Vendic\OhDear\Checks\PublicSqlFiles</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Check inputs -->
+    <type name="Vendic\OhDear\Checks\Diskspace">
+        <arguments>
+            <argument name="maxPercentageUsed" xsi:type="number">80</argument>
+        </arguments>
+    </type>
+    <type name="Vendic\OhDear\Checks\CpuLoad">
+        <arguments>
+            <argument name="maxLoadLastMinute" xsi:type="number">18.0</argument>
+            <argument name="maxLoadLastFiveMinutes" xsi:type="number">15.0</argument>
+            <argument name="maxLoadLastFifteenMinutes" xsi:type="number">12.0</argument>
+        </arguments>
+    </type>
+    <type name="Vendic\OhDear\Checks\DatabaseConnectionCount">
+        <arguments>
+            <argument name="failedTreshold" xsi:type="number">75</argument>
+            <argument name="warningThreshold" xsi:type="number">50</argument>
+        </arguments>
+    </type>
+    <type name="Vendic\OhDear\Checks\PhpFpmCount">
+        <arguments>
+            <argument name="warningThreshold" xsi:type="number">60</argument>
+            <argument name="failedTreshold" xsi:type="number">75</argument>
+        </arguments>
+    </type>
+</config>
