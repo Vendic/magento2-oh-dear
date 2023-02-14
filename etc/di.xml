@@ -12,8 +12,6 @@
                 <item name="cpu_load" xsi:type="object">Vendic\OhDear\Checks\CpuLoad</item>
                 <item name="redis_connection" xsi:type="object">Vendic\OhDear\Checks\RedisConnection</item>
                 <item name="diskspace" xsi:type="object">Vendic\OhDear\Checks\Diskspace</item>
-                <item name="elasticsuite_elasticsearch" xsi:type="object">Vendic\OhDear\Checks\ElasticSuite</item>
-                <item name="elasticsuite_elasticsearch_shards" xsi:type="object">Vendic\OhDear\Checks\ElasticSuiteShards</item>
                 <item name="db_connection_count" xsi:type="object">Vendic\OhDear\Checks\DatabaseConnectionCount</item>
                 <item name="php_fpm_count" xsi:type="object">Vendic\OhDear\Checks\PhpFpmCount</item>
                 <item name="public_sql" xsi:type="object">Vendic\OhDear\Checks\PublicSqlFiles</item>
