@@ -1,6 +1,12 @@
 # Oh Dear module for Magento 2
+This module adds [Application health monitoring](https://ohdear.app/features/application-health-monitoring) using [Oh Dear](https://ohdear.app/) to Magento 2. It allows you to easily write your own custom checks. Additionally, it ships with a number of checks out of the box. 
 
-### Configuration
+## Installation
+```bash
+composer require vendic/magento2-oh-dear-checks
+```
+
+## Configuration
 Some checks have an optional configuration. You can configure these checks in the `env.php`. Example:
 ```php
     'ohdear' => [
@@ -15,3 +21,9 @@ Some checks have an optional configuration. You can configure these checks in th
         ]
     ]
 ```
+
+## Checks
+TODO
+
+## Write your own checks
+TODO
