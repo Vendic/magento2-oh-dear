@@ -36,6 +36,17 @@ class Configuration
         return is_bool($checkConfig) ? $checkConfig : true;
     }
 
+    public function getCheckConfigValue(CheckInterface $check, string $key, $default = null)
+    {
+        $checkConfig = $this->getCheckConfig($check);
+
+        if (is_array($checkConfig)) {
+            return $checkConfig[$key] ?? $default;
+        }
+
+        return $default;
+    }
+
     private function getCheckConfig(CheckInterface $check): bool|null|array
     {
         $className = get_class($check);

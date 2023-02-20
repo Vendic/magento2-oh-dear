@@ -10,6 +10,7 @@ use Vendic\OhDear\Api\CheckInterface;
 use Vendic\OhDear\Api\Data\CheckResultInterface;
 use Vendic\OhDear\Model\CheckResult;
 use Vendic\OhDear\Model\CheckResultFactory;
+use Vendic\OhDear\Utils\Configuration;
 use Vendic\OhDear\Utils\CpuLoad as CpuLoadUtils;
 use Vendic\OhDear\Api\Data\CheckStatus;
 
@@ -19,6 +20,7 @@ class CpuLoad implements CheckInterface
         private float $maxLoadLastMinute,
         private float $maxLoadLastFiveMinutes,
         private float $maxLoadLastFifteenMinutes,
+        private Configuration $configuration,
         private CheckResultFactory $checkResultFactory,
         private CpuLoadUtils $cpuLoadUtils,
     ) {
@@ -47,21 +49,21 @@ class CpuLoad implements CheckInterface
             ]
         );
 
-        if ($cpuLoadResults->getLoadLastMinute() > $this->maxLoadLastMinute) {
+        if ($cpuLoadResults->getLoadLastMinute() > $this->getMaxLoadLastMinute()) {
             $checkResult->setStatus(CheckStatus::STATUS_WARNING);
             $checkResult->setNotificationMessage('CPU load last minute is too high');
             $checkResult->setShortSummary('CPU load last minute is too high');
             return $checkResult;
         }
 
-        if ($cpuLoadResults->getLoadLastFiveMinutes() > $this->maxLoadLastFiveMinutes) {
+        if ($cpuLoadResults->getLoadLastFiveMinutes() > $this->getMaxLoadLastFiveMinutes()) {
             $checkResult->setStatus(CheckStatus::STATUS_WARNING);
             $checkResult->setNotificationMessage('CPU load last five minutes is too high');
             $checkResult->setShortSummary('CPU load last five minutes is too high');
             return $checkResult;
         }
 
-        if ($cpuLoadResults->getLoadLastFifteenMinutes() > $this->maxLoadLastFifteenMinutes) {
+        if ($cpuLoadResults->getLoadLastFifteenMinutes() > $this->getLastFifteenMinutes()) {
             $checkResult->setStatus(CheckStatus::STATUS_WARNING);
             $checkResult->setNotificationMessage('CPU load last fifteen minutes is too high');
             $checkResult->setShortSummary('CPU load last fifteen minutes is too high');
@@ -72,5 +74,23 @@ class CpuLoad implements CheckInterface
         $checkResult->setNotificationMessage('CPU load is OK');
         $checkResult->setShortSummary('CPU load is OK');
         return $checkResult;
+    }
+
+    private function getMaxLoadLastMinute(): float
+    {
+        $configValue = $this->configuration->getCheckConfigValue($this, 'max_load_last_minute');
+        return is_numeric($configValue) ? (float) $configValue : $this->maxLoadLastMinute;
+    }
+
+    private function getMaxLoadLastFiveMinutes(): float
+    {
+        $configValue = $this->configuration->getCheckConfigValue($this, 'max_load_last_five_minutes');
+        return is_numeric($configValue) ? (float) $configValue : $this->maxLoadLastFiveMinutes;
+    }
+
+    private function getLastFifteenMinutes(): float
+    {
+        $configValue = $this->configuration->getCheckConfigValue($this, 'max_load_last_fifteen_minutes');
+        return is_numeric($configValue) ? (float) $configValue : $this->maxLoadLastFifteenMinutes;
     }
 }

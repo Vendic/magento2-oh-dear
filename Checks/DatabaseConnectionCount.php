@@ -10,6 +10,7 @@ use Vendic\OhDear\Api\CheckInterface;
 use Vendic\OhDear\Api\Data\CheckResultInterface;
 use Vendic\OhDear\Api\Data\CheckStatus;
 use Vendic\OhDear\Model\CheckResultFactory;
+use Vendic\OhDear\Utils\Configuration;
 use Vendic\OhDear\Utils\Database as DatabseUtils;
 
 class DatabaseConnectionCount implements CheckInterface
@@ -20,6 +21,7 @@ class DatabaseConnectionCount implements CheckInterface
     public function __construct(
         private CheckResultFactory $checkResultFactory,
         private DatabseUtils $databaseUtils,
+        private Configuration $configuration,
         private int $warningThreshold,
         private int $failedTreshold
     ) {
@@ -46,14 +48,14 @@ class DatabaseConnectionCount implements CheckInterface
             ]
         );
 
-        if ($connectionCount > $this->failedTreshold) {
+        if ($connectionCount > $this->getFailedTreshold()) {
             $checkResult->setStatus(CheckStatus::STATUS_FAILED);
             $checkResult->setNotificationMessage('Database connection error count is too high');
             $checkResult->setShortSummary(self::CONNECTIONS_TO_HIGH_SUMMARY);
             return $checkResult;
         }
 
-        if ($connectionCount > $this->warningThreshold) {
+        if ($connectionCount > $this->getWarningThreshold()) {
             $checkResult->setStatus(CheckStatus::STATUS_WARNING);
             $checkResult->setNotificationMessage('Database connection warning: count is too high');
             $checkResult->setShortSummary(self::CONNECTIONS_TO_HIGH_SUMMARY);
@@ -63,5 +65,17 @@ class DatabaseConnectionCount implements CheckInterface
         $checkResult->setStatus(CheckStatus::STATUS_OK);
         $checkResult->setShortSummary(self::OK_SUMMARY);
         return $checkResult;
+    }
+
+    private function getFailedTreshold(): int
+    {
+        $configValue = $this->configuration->getCheckConfigValue($this, 'failed_treshold');
+        return is_numeric($configValue) ? (int) $configValue : $this->failedTreshold;
+    }
+
+    private function getWarningThreshold(): int
+    {
+        $configValue = $this->configuration->getCheckConfigValue($this, 'warning_treshold');
+        return is_numeric($configValue) ? (int) $configValue : $this->warningThreshold;
     }
 }
