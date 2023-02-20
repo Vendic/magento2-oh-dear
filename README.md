@@ -1,4 +1,4 @@
-# Oh Dear module for Magento 2
+# Oh Dear module for Magento 2 [![Integration Test](https://github.com/Vendic/magento2-oh-dear/actions/workflows/integration.yml/badge.svg)](https://github.com/Vendic/magento2-oh-dear/actions/workflows/integration.yml)
 This module adds [Application health monitoring](https://ohdear.app/features/application-health-monitoring) using [Oh Dear](https://ohdear.app/) to Magento 2. It allows you to easily write your own custom checks. Additionally, it ships with a number of checks out of the box. 
 
 ## Installation
