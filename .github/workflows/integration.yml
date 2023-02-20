@@ -1,8 +1,5 @@
 name: Integration Test
 
-env:
-  PACKAGE_NAME: vendic/magento2-oh-dear-checks
-
 on:
   workflow_dispatch: {}
   schedule:
@@ -10,6 +7,7 @@ on:
   push:
     branches:
       - master
+      - feature/additional-configuration
     paths-ignore:
       - "docs/**"
       - package.json
@@ -32,12 +30,15 @@ jobs:
     steps:
       - uses: graycoreio/github-actions-magento2/supported-version@main
         id: supported-version
+        with:
+          kind: latest
       - run: echo ${{ steps.supported-version.outputs.matrix }}
+
   integration-workflow:
     needs: compute_matrix
     uses: graycoreio/github-actions-magento2/.github/workflows/integration.yaml@main
     with:
-      package_name: ${{ env.PACKAGE_NAME }}
+      package_name: vendic/magento2-oh-dear-checks
       matrix: ${{ needs.compute_matrix.outputs.matrix }}
-      test_command: ../../../vendor/bin/phpunit ../../../vendor/${{ env.PACKAGE_NAME }}/Test/Integration
+      test_command: ../../../vendor/bin/phpunit ../../../vendor/vendic/magento2-oh-dear-checks/Test/Integration
       fail-fast: false
