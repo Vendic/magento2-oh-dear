@@ -40,4 +40,5 @@ TODO
     </type>
 ```
 3. Preferabbly add a test for your check. See `Vendic\OhDear\Test\Integration\Checks\` for examples.
-4. Open a PR with your new check!
+4. Test your output on: https://magento2.test/oh-dear-health-application-check-results. Your GET request should include the header `oh-dear-health-check-secret`. The header value should match the Magento config value of `ohdear/health_check/secret`. If you don't have this header, you will get a 'No health secret provided' response. 
+5. Open a PR with your new check!
