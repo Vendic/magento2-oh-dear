@@ -26,4 +26,18 @@ Some checks have an optional configuration. You can configure these checks in th
 TODO
 
 ## Write your own checks
-TODO
+1. Create a new class that implements `Vendic\OhDear\Interfaces\CheckInterface`, place it in 'Checks'. This class will contain the main logic of your check.
+2. Add your new class to the 'checks' argument of `Vendic\OhDear\Api\CheckListInterface`
+```xml
+    <type name="Vendic\OhDear\Api\CheckListInterface">
+        <arguments>
+            <argument name="checks" xsi:type="array">
+                ...
+                <item name="your_new_check" xsi:type="object">Vendic\OhDear\Checks\YourNewCheck</item>
+                ...
+            </argument>
+        </arguments>
+    </type>
+```
+3. Preferabbly add a test for your check. See `Vendic\OhDear\Test\Integration\Checks\` for examples.
+4. Open a PR with your new check!
