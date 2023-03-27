@@ -15,6 +15,7 @@
                 <item name="db_connection_count" xsi:type="object">Vendic\OhDear\Checks\DatabaseConnectionCount</item>
                 <item name="php_fpm_count" xsi:type="object">Vendic\OhDear\Checks\PhpFpmCount</item>
                 <item name="public_sql" xsi:type="object">Vendic\OhDear\Checks\PublicSqlFiles</item>
+                <item name="servername_account" xsi:type="object">Vendic\OhDear\Checks\ServernameAccount</item>
             </argument>
         </arguments>
     </type>
