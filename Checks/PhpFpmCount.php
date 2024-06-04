@@ -10,6 +10,7 @@ use Vendic\OhDear\Api\Data\CheckResultInterface;
 use Vendic\OhDear\Api\Data\CheckStatus;
 use Vendic\OhDear\Model\CheckResultFactory;
 use Vendic\OhDear\Utils\BashCommands;
+use Vendic\OhDear\Utils\Configuration;
 use Vendic\OhDear\Utils\Shell as ShellUtils;
 
 class PhpFpmCount implements CheckInterface
@@ -17,6 +18,7 @@ class PhpFpmCount implements CheckInterface
     public function __construct(
         private int $warningThreshold,
         private int $failedTreshold,
+        private Configuration $configuration,
         private ShellUtils $shellUtils,
         private CheckResultFactory $checkResultFactory,
     ) {
@@ -49,7 +51,7 @@ class PhpFpmCount implements CheckInterface
             ]
         );
 
-        if ($processCount > $this->failedTreshold) {
+        if ($processCount > $this->getFailedTreshold()) {
             $checkResult->setStatus(CheckStatus::STATUS_FAILED);
             $checkResult->setNotificationMessage(
                 sprintf(
@@ -61,7 +63,7 @@ class PhpFpmCount implements CheckInterface
             return $checkResult;
         }
 
-        if ($processCount > $this->warningThreshold) {
+        if ($processCount > $this->getWarningThreshold()) {
             $checkResult->setStatus(CheckStatus::STATUS_WARNING);
             $checkResult->setNotificationMessage(
                 sprintf(
@@ -76,5 +78,17 @@ class PhpFpmCount implements CheckInterface
         $checkResult->setStatus(CheckStatus::STATUS_OK);
         $checkResult->setShortSummary('PHP-FPM process count OK');
         return $checkResult;
+    }
+
+    private function getFailedTreshold(): int
+    {
+        $configValue = $this->configuration->getCheckConfigValue($this, 'failed_treshold');
+        return is_numeric($configValue) ? (int) $configValue : $this->failedTreshold;
+    }
+
+    private function getWarningThreshold(): int
+    {
+        $configValue = $this->configuration->getCheckConfigValue($this, 'warning_treshold');
+        return is_numeric($configValue) ? (int) $configValue : $this->warningThreshold;
     }
 }
