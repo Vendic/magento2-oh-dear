@@ -18,7 +18,11 @@ Some checks have an optional configuration. You can configure these checks in th
         \Vendic\OhDear\Checks\DatabaseConnectionCount::class => [
             'failed_treshold' => 100,
             'warning_treshold' => 80
-        ]
+        ],
+        \Vendic\OhDear\Checks\PhpFpmCount::class => [
+            'failed_treshold' => 100,
+            'warning_treshold' => 80
+        ],
     ]
 ```
 
