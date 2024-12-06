@@ -7,6 +7,7 @@ namespace Vendic\OhDear\Plugin;
 
 use Magento\Framework\App\Request\Http as HttpRequest;
 use Magento\Framework\App\RequestInterface;
+use Magento\Framework\App\State;
 use Magento\Framework\Controller\Result\Json;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Vendic\OhDear\Controller\Index\Index as ApplicationHealthResultController;
@@ -17,7 +18,8 @@ class ValidateOhDearSecret
     public function __construct(
         private HttpRequest $request,
         private JsonFactory $jsonFactory,
-        private Configuration $configuration
+        private Configuration $configuration,
+        private State $state,
     ) {
     }
 
@@ -26,6 +28,10 @@ class ValidateOhDearSecret
      */
     public function aroundExecute(ApplicationHealthResultController $subject, callable $proceed) : Json
     {
+        if ($this->state->getMode() === State::MODE_DEVELOPER) {
+            return $proceed();
+        }
+
         $secret = $this->request->getHeader('oh-dear-health-check-secret');
         $json = $this->jsonFactory->create();
 
