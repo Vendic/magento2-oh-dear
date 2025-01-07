@@ -16,6 +16,8 @@
                 <item name="php_fpm_count" xsi:type="object">Vendic\OhDear\Checks\PhpFpmCount</item>
                 <item name="public_sql" xsi:type="object">Vendic\OhDear\Checks\PublicSqlFiles</item>
                 <item name="servername_account" xsi:type="object">Vendic\OhDear\Checks\ServernameAccount</item>
+                <item name="sentry_connection" xsi:type="object">Vendic\OhDear\Checks\SentryConnection</item>
+                <item name="rabbitmq_connection" xsi:type="object">Vendic\OhDear\Checks\RabbitmqConnection</item>
             </argument>
         </arguments>
     </type>
