@@ -14,6 +14,8 @@ use Vendic\OhDear\Model\CheckResultFactory;
  */
 class RedisConnection implements CheckInterface
 {
+    public const CONFIG_VALUE_CACHE_REDIS_LEGACY = 'Cm_Cache_Backend_Redis';
+
     public function __construct(
         private DeploymentConfig $deploymentConfig,
         private Cache $cache,
@@ -45,6 +47,15 @@ class RedisConnection implements CheckInterface
             return $checkResult;
         }
 
+        if ($this->isLegacyRedis($deploymentConfig)) {
+            $checkResult->setStatus(CheckStatus::STATUS_WARNING);
+            $checkResult->setShortSummary('Legacy Redis configuration detected');
+            $checkResult->setNotificationMessage(
+                sprintf('Legacy Redis configuration detected, switch to %s', Cache::CONFIG_VALUE_CACHE_REDIS)
+            );
+            return $checkResult;
+        }
+
         $connectionErrors = $this->cache->validate($options, $deploymentConfig);
         $status = count($connectionErrors) === 0 ? CheckStatus::STATUS_OK : CheckStatus::STATUS_FAILED;
 
@@ -62,7 +73,19 @@ class RedisConnection implements CheckInterface
     private function checkisRedisEnabled(DeploymentConfig $deploymentConfig): bool
     {
         $currentCacheBackend = $this->getBackendCacheType($deploymentConfig);
-        return $currentCacheBackend == Cache::CONFIG_VALUE_CACHE_REDIS;
+
+        return in_array(
+            $currentCacheBackend,
+            [
+                Cache::CONFIG_VALUE_CACHE_REDIS,
+                RedisConnection::CONFIG_VALUE_CACHE_REDIS_LEGACY
+            ]
+        );
+    }
+
+    private function isLegacyRedis(DeploymentConfig $deploymentConfig): bool
+    {
+        return $this->getBackendCacheType($deploymentConfig) === RedisConnection::CONFIG_VALUE_CACHE_REDIS_LEGACY;
     }
 
     private function getBackendCacheType(DeploymentConfig $deploymentConfig): mixed
