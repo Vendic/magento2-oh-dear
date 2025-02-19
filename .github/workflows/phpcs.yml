@@ -1,8 +1,8 @@
-name: Integration
+name: Phpcs
 on: [push]
 
 jobs:
-  integration:
+  phpcs:
     strategy:
       matrix:
         include:
@@ -20,5 +20,5 @@ jobs:
           magento-version: ${{ matrix.MAGENTO_VERSION }}
 
       - name: Run tests
-        run: docker exec ${{ steps.setup.outputs.docker-container-name }} bash -c "cd /data/dev/tests/integration/ && ../../../vendor/bin/phpunit"
+        run: docker exec ${{ steps.setup.outputs.docker-container-name }} bash -c "cd /data/ && ./vendor/bin/phpcs --standard=VendicMagento2 /data/extensions/"
 

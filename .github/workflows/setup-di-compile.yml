@@ -1,8 +1,8 @@
-name: Integration
+name: Run setup:di:compile
 on: [push]
 
 jobs:
-  integration:
+  compilation:
     strategy:
       matrix:
         include:
@@ -19,6 +19,5 @@ jobs:
           php-version: ${{ matrix.PHP_VERSION }}
           magento-version: ${{ matrix.MAGENTO_VERSION }}
 
-      - name: Run tests
-        run: docker exec ${{ steps.setup.outputs.docker-container-name }} bash -c "cd /data/dev/tests/integration/ && ../../../vendor/bin/phpunit"
-
+      - name: Run setup:di:compile
+        run: docker exec ${{ steps.setup.outputs.docker-container-name }} ./retry "php bin/magento setup:di:compile"

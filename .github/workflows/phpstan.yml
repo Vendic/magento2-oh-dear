@@ -1,8 +1,8 @@
-name: Integration
+name: phpstan
 on: [push]
 
 jobs:
-  integration:
+  phpstan:
     strategy:
       matrix:
         include:
@@ -19,6 +19,5 @@ jobs:
           php-version: ${{ matrix.PHP_VERSION }}
           magento-version: ${{ matrix.MAGENTO_VERSION }}
 
-      - name: Run tests
-        run: docker exec ${{ steps.setup.outputs.docker-container-name }} bash -c "cd /data/dev/tests/integration/ && ../../../vendor/bin/phpunit"
-
+      - name: Run PHPStan
+        run: docker exec ${{ steps.setup.outputs.docker-container-name }} /bin/bash -c "./vendor/bin/phpstan analyse --no-progress -c /data/extensions/*/phpstan.neon /data/extensions"
