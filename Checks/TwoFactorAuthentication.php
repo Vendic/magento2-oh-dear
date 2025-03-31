@@ -18,7 +18,6 @@ class TwoFactorAuthentication implements CheckInterface
     public function __construct(
         private ScopeConfigInterface $scopeConfig,
         private ModuleListInterface $moduleList,
-        private Configuration $configuration,
         private CheckResultFactory $checkResultFactory,
     ) {
     }
