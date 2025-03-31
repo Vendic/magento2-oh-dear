@@ -18,6 +18,7 @@
                 <item name="servername_account" xsi:type="object">Vendic\OhDear\Checks\ServernameAccount</item>
                 <item name="sentry_connection" xsi:type="object">Vendic\OhDear\Checks\SentryConnection</item>
                 <item name="rabbitmq_connection" xsi:type="object">Vendic\OhDear\Checks\RabbitmqConnection</item>
+                <item name="two_factor_authentication" xsi:type="object">Vendic\OhDear\Checks\TwoFactorAuthentication</item>
             </argument>
         </arguments>
     </type>
