@@ -29,7 +29,7 @@ class SentryConnection implements CheckInterface
         $checkResult->setLabel('Sentry connection');
         $checkResult->setMeta($deploymentConfig->get('sentry') ?? []);
 
-        if($this->moduleList->getOne('JustBetter_Sentry') === null) {
+        if ($this->moduleList->getOne('JustBetter_Sentry') === null) {
             $checkResult->setStatus(CheckStatus::STATUS_SKIPPED);
             $checkResult->setShortSummary('Sentry module not installed');
             $checkResult->setNotificationMessage('Sentry module not installed');
