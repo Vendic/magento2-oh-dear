@@ -28,6 +28,13 @@ class TwoFactorAuthentication implements CheckInterface
         $checkResult->setName('two_factor_authentication');
         $checkResult->setLabel('Two Factor Authentication');
 
+        if ($this->moduleList->getOne('Magento_TwoFactorAuth') === null) {
+            $checkResult->setStatus(CheckStatus::STATUS_SKIPPED);
+            $checkResult->setNotificationMessage('Two Factor Authentication module not installed');
+            $checkResult->setShortSummary('2FA module not installed');
+            return $checkResult;
+        }
+
         $isTwoFactorAuthModuleEnabled = $this->isModuleEnabled('Magento_TwoFactorAuth');
         $twoFactorAuthSetting = $this->scopeConfig->getValue('twofactorauth/general/enable');
 
