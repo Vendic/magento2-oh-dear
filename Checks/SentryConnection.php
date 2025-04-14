@@ -2,6 +2,7 @@
 
 namespace Vendic\OhDear\Checks;
 
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\DeploymentConfig;
 use Magento\Framework\Module\ModuleList;
 use Vendic\OhDear\Api\CheckInterface;
@@ -14,7 +15,8 @@ class SentryConnection implements CheckInterface
     public function __construct(
         private DeploymentConfig $deploymentConfig,
         private CheckResultFactory $checkResultFactory,
-        private ModuleList $moduleList
+        private ModuleList $moduleList,
+        private ScopeConfigInterface $scopeConfig,
     ) {
     }
 
@@ -54,6 +56,13 @@ class SentryConnection implements CheckInterface
         if (
             !empty($deploymentConfig->get('sentry/dsn')) &&
             !empty($deploymentConfig->get('sentry/environment'))
+        ) {
+            return true;
+        }
+
+        if (
+            $this->scopeConfig->isSetFlag('sentry/environment/enabled') &&
+            !empty($this->scopeConfig->getValue('sentry/environment/dsn'))
         ) {
             return true;
         }
