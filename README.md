@@ -26,6 +26,23 @@ Some checks have an optional configuration. You can configure these checks in th
     ]
 ```
 
+## Disabling Checks
+To disable any check, add an entry to your `env.php` with the check class name and set `enabled` to `false`:
+
+```php
+    'ohdear' => [
+        'Vendic\\OhDear\\Checks\\CpuLoad' => [
+            'enabled' => false
+        ],
+        'Vendic\\OhDear\\Checks\\Diskspace' => [
+            'enabled' => false
+        ],
+        'Vendic\\OhDear\\Checks\\TwoFactorAuthentication' => [
+             'enabled' => false
+        ]
+    ],
+```
+
 ## Checks
 TODO
 
