@@ -10,6 +10,9 @@ composer require vendic/magento2-oh-dear-checks
 Some checks have an optional configuration. You can configure these checks in the `env.php`. Example:
 ```php
     'ohdear' => [
+        \Vendic\OhDear\Checks\Diskspace::class => [
+            'max_percentage_used' => '86'
+        ],
         \Vendic\OhDear\Checks\CpuLoad::class => [
             'max_load_last_minute' => 10,
             'max_load_last_five_minutes' => 8,

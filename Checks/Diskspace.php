@@ -9,14 +9,16 @@ use Vendic\OhDear\Api\CheckInterface;
 use Vendic\OhDear\Api\Data\CheckResultInterface;
 use Vendic\OhDear\Api\Data\CheckStatus;
 use Vendic\OhDear\Model\CheckResultFactory;
+use Vendic\OhDear\Utils\Configuration;
 use Vendic\OhDear\Utils\Diskspace as DiskspaceUtils;
 
 class Diskspace implements CheckInterface
 {
     public function __construct(
         private CheckResultFactory $checkResultFactory,
-        private int $maxPercentageUsed,
+        private Configuration $configuration,
         private DiskspaceUtils $diskspaceUtils,
+        private int $maxPercentageUsed,
     ) {
     }
 
@@ -51,6 +53,7 @@ class Diskspace implements CheckInterface
 
     private function getMaxPercentageUsed(): int
     {
-        return $this->maxPercentageUsed;
+        $configValue = $this->configuration->getCheckConfigValue($this, 'max_percentage_used');
+        return is_numeric($configValue) ? (int) $configValue : $this->maxPercentageUsed;
     }
 }

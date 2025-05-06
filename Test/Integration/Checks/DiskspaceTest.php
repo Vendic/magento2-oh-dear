@@ -11,6 +11,7 @@ use PHPUnit\Framework\TestCase;
 use Vendic\OhDear\Api\Data\CheckStatus;
 use Vendic\OhDear\Checks\Diskspace as DiskspaceCheck;
 use Vendic\OhDear\Model\CheckResultFactory;
+use Vendic\OhDear\Utils\Configuration;
 use Vendic\OhDear\Utils\Diskspace;
 
 class DiskspaceTest extends TestCase
@@ -32,8 +33,9 @@ class DiskspaceTest extends TestCase
             ->setConstructorArgs(
                 [
                     $objectManager->get(CheckResultFactory::class),
-                    80,
-                    $diskspaceUtilsMock
+                    $objectManager->get(Configuration::class),
+                    $diskspaceUtilsMock,
+                    80
                 ]
             )
             ->onlyMethods([])
@@ -45,33 +47,34 @@ class DiskspaceTest extends TestCase
         $this->assertEquals('Disk space is 81% used', $checkResult->getShortSummary());
     }
 
-    public function testDiskspaceOk() : void
+    public function testDiskspaceOk(): void
     {
-          /** @var MockObject & Diskspace $diskspaceUtilsMock */
-            $diskspaceUtilsMock = $this->getMockBuilder(Diskspace::class)
-                ->disableOriginalConstructor()
-                ->onlyMethods(['getFreeDiskspace', 'getTotalDiskSpace'])
-                ->getMock();
-            $diskspaceUtilsMock->method('getTotalDiskSpace')->willReturn(10);
-            $diskspaceUtilsMock->method('getFreeDiskspace')->willReturn(9);
+        /** @var MockObject & Diskspace $diskspaceUtilsMock */
+        $diskspaceUtilsMock = $this->getMockBuilder(Diskspace::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getFreeDiskspace', 'getTotalDiskSpace'])
+            ->getMock();
+        $diskspaceUtilsMock->method('getTotalDiskSpace')->willReturn(10);
+        $diskspaceUtilsMock->method('getFreeDiskspace')->willReturn(9);
 
-            $objectManager = Bootstrap::getObjectManager();
+        $objectManager = Bootstrap::getObjectManager();
 
-            /** @var DiskspaceCheck & MockObject $diskspaceTestMock */
-            $diskspaceTestMock = $this->getMockBuilder(DiskspaceCheck::class)
-                ->setConstructorArgs(
-                    [
-                        $objectManager->get(CheckResultFactory::class),
-                        80,
-                        $diskspaceUtilsMock
-                    ]
-                )
-                ->onlyMethods([])
-                ->getMock();
+        /** @var DiskspaceCheck & MockObject $diskspaceTestMock */
+        $diskspaceTestMock = $this->getMockBuilder(DiskspaceCheck::class)
+            ->setConstructorArgs(
+                [
+                    $objectManager->get(CheckResultFactory::class),
+                    $objectManager->get(Configuration::class),
+                    $diskspaceUtilsMock,
+                    80
+                ]
+            )
+            ->onlyMethods([])
+            ->getMock();
 
-            $checkResult = $diskspaceTestMock->run();
-            $this->assertEquals(CheckStatus::STATUS_OK, $checkResult->getStatus());
-            $this->assertEquals('Disk space is OK', $checkResult->getNotificationMessage());
-            $this->assertEquals('Disk space is 10% used', $checkResult->getShortSummary());
+        $checkResult = $diskspaceTestMock->run();
+        $this->assertEquals(CheckStatus::STATUS_OK, $checkResult->getStatus());
+        $this->assertEquals('Disk space is OK', $checkResult->getNotificationMessage());
+        $this->assertEquals('Disk space is 10% used', $checkResult->getShortSummary());
     }
 }

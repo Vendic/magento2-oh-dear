@@ -53,17 +53,13 @@ class SentryConnection implements CheckInterface
 
     private function checkisSentryConfigured(DeploymentConfig $deploymentConfig): bool
     {
-        if (
-            !empty($deploymentConfig->get('sentry/dsn')) &&
-            !empty($deploymentConfig->get('sentry/environment'))
-        ) {
+        if (!empty($deploymentConfig->get('sentry/dsn'))
+            && !empty($deploymentConfig->get('sentry/environment'))) {
             return true;
         }
 
-        if (
-            $this->scopeConfig->isSetFlag('sentry/environment/enabled') &&
-            !empty($this->scopeConfig->getValue('sentry/environment/dsn'))
-        ) {
+        if ($this->scopeConfig->isSetFlag('sentry/environment/enabled')
+            && !empty($this->scopeConfig->getValue('sentry/environment/dsn'))) {
             return true;
         }
 
