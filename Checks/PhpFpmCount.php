@@ -9,18 +9,23 @@ use Vendic\OhDear\Api\CheckInterface;
 use Vendic\OhDear\Api\Data\CheckResultInterface;
 use Vendic\OhDear\Api\Data\CheckStatus;
 use Vendic\OhDear\Model\CheckResultFactory;
+use Vendic\OhDear\Service\CacheService;
 use Vendic\OhDear\Utils\BashCommands;
 use Vendic\OhDear\Utils\Configuration;
 use Vendic\OhDear\Utils\Shell as ShellUtils;
+use Vendic\OhDear\Model\CachedStatusResolver;
 
 class PhpFpmCount implements CheckInterface
 {
     public function __construct(
         private int $warningThreshold,
         private int $failedTreshold,
+        private int $statusTimeThreshold,
         private Configuration $configuration,
         private ShellUtils $shellUtils,
         private CheckResultFactory $checkResultFactory,
+        private CachedStatusResolver $cachedStatusResolver,
+        private CacheService $cacheService
     ) {
     }
 
@@ -33,6 +38,7 @@ class PhpFpmCount implements CheckInterface
         if ($this->shellUtils->isMacOS()) {
             $checkResult->setStatus(CheckStatus::STATUS_SKIPPED);
             $checkResult->setShortSummary('This check is not supported on Mac OS');
+            $this->cacheService->removeCheckData($checkResult->getName());
             return $checkResult;
         }
 
@@ -42,6 +48,7 @@ class PhpFpmCount implements CheckInterface
             $checkResult->setStatus(CheckStatus::STATUS_CRASHED);
             $checkResult->setNotificationMessage($e->getMessage());
             $checkResult->setShortSummary('Could not get PHP-FPM process count');
+            $this->cacheService->removeCheckData($checkResult->getName());
             return $checkResult;
         }
 
@@ -51,33 +58,40 @@ class PhpFpmCount implements CheckInterface
             ]
         );
 
+        return $this->processStatus($checkResult, $processCount);
+    }
+
+    private function processStatus(CheckResultInterface $checkResult, int $processCount): CheckResultInterface
+    {
+        $this->cachedStatusResolver->setStatusTimeThreshold($this->getStatusTimeThreshold());
+
         if ($processCount > $this->getFailedTreshold()) {
-            $checkResult->setStatus(CheckStatus::STATUS_FAILED);
-            $checkResult->setNotificationMessage(
-                sprintf(
-                    'PHP-FPM process count is too high, (%s)',
-                    $processCount
-                )
+            return $this->cachedStatusResolver->updateCacheCheck(
+                $checkResult,
+                CheckStatus::STATUS_FAILED,
+                $processCount
             );
-            $checkResult->setShortSummary('PHP-FPM process count error');
-            return $checkResult;
         }
 
         if ($processCount > $this->getWarningThreshold()) {
-            $checkResult->setStatus(CheckStatus::STATUS_WARNING);
-            $checkResult->setNotificationMessage(
-                sprintf(
-                    'PHP-FPM process count is too high, (%s)',
-                    $processCount
-                )
+            return $this->cachedStatusResolver->updateCacheCheck(
+                $checkResult,
+                CheckStatus::STATUS_WARNING,
+                $processCount
             );
-            $checkResult->setShortSummary('PHP-FPM process count warning');
-            return $checkResult;
         }
 
-        $checkResult->setStatus(CheckStatus::STATUS_OK);
-        $checkResult->setShortSummary('PHP-FPM process count OK');
-        return $checkResult;
+        return $this->cachedStatusResolver->updateCacheCheck(
+            $checkResult,
+            CheckStatus::STATUS_OK,
+            $processCount
+        );
+    }
+
+    private function getStatusTimeThreshold(): int
+    {
+        $configValue = $this->configuration->getCheckConfigValue($this, 'status_time_treshold');
+        return is_numeric($configValue) ? (int) $configValue : $this->failedTreshold;
     }
 
     private function getFailedTreshold(): int

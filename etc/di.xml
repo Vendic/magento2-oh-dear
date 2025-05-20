@@ -46,6 +46,7 @@
         <arguments>
             <argument name="warningThreshold" xsi:type="number">60</argument>
             <argument name="failedTreshold" xsi:type="number">75</argument>
+            <argument name="statusTimeThreshold" xsi:type="number">5</argument>
         </arguments>
     </type>
 </config>
