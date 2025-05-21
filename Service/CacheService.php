@@ -17,15 +17,6 @@ class CacheService
 
     private const DATA_SEPARATOR = '==>>';
 
-    // Checks statuses sorted by decreasing severity level.
-    private const STATUSES = [
-        CheckStatus::STATUS_CRASHED,
-        CheckStatus::STATUS_FAILED,
-        CheckStatus::STATUS_WARNING,
-        CheckStatus::STATUS_SKIPPED,
-        CheckStatus::STATUS_OK,
-    ];
-
     public function __construct(
         private readonly CacheInterface $cache,
     ) {
@@ -34,14 +25,14 @@ class CacheService
     /**
      * @param string $checkKey
      * @return array{
-     *     severity: CheckStatus,
+     *     status: string,
      *     data: string
      * }|null
      */
     public function getDataForCheck(string $checkKey): ?array
     {
         $result = [
-            'severity' => null,
+            'status' => null,
             'data' => null
         ];
 
@@ -54,7 +45,7 @@ class CacheService
         [$severity, $data] = explode(self::DATA_SEPARATOR, $cacheData, 2);
 
         $result['data'] = $data;
-        $result['severity'] = $severity;
+        $result['status'] = $severity;
 
         return $result['data'] ? $result : null;
     }

@@ -91,7 +91,7 @@ class PhpFpmCount implements CheckInterface
     private function getStatusTimeThreshold(): int
     {
         $configValue = $this->configuration->getCheckConfigValue($this, 'status_time_treshold');
-        return is_numeric($configValue) ? (int) $configValue : $this->failedTreshold;
+        return is_numeric($configValue) ? (int) $configValue : $this->statusTimeThreshold;
     }
 
     private function getFailedTreshold(): int
