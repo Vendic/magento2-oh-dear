@@ -15,6 +15,8 @@ class CacheService
 {
     private const OD_CACHE_PREFIX = 'oh_dear';
 
+    private const DATA_SEPARATOR = '==>>';
+
     // Checks statuses sorted by decreasing severity level.
     private const STATUSES = [
         CheckStatus::STATUS_CRASHED,
@@ -43,14 +45,16 @@ class CacheService
             'data' => null
         ];
 
-        foreach (self::STATUSES as $status) {
-            $identifier = self::OD_CACHE_PREFIX . '_' . $checkKey . '_' . $status;
-            if ($cacheData = $this->cache->load($identifier)) {
-                $result['data'] = $cacheData;
-                $result['severity'] = $status;
-                break;
-            }
+        $identifier = self::OD_CACHE_PREFIX . '_' . $checkKey;
+
+        if (!$cacheData = $this->cache->load($identifier)) {
+            return null;
         }
+
+        [$severity, $data] = explode(self::DATA_SEPARATOR, $cacheData, 2);
+
+        $result['data'] = $data;
+        $result['severity'] = $severity;
 
         return $result['data'] ? $result : null;
     }
@@ -58,23 +62,19 @@ class CacheService
     public function removeCheckData(string $checkKey): bool
     {
         $result = false;
-        foreach (self::STATUSES as $status) {
-            $identifier = self::OD_CACHE_PREFIX . '_' . $checkKey . '_' . $status;
-            $result |= $this->cache->remove($identifier);
-        }
+        $identifier = self::OD_CACHE_PREFIX . '_' . $checkKey;
 
-        return $result;
+        return $this->cache->remove($identifier);
     }
 
     public function saveCheckData(string $checkKey, string $status, string $data): bool
     {
-        $identifier = self::OD_CACHE_PREFIX . '_' . $checkKey . '_' . $status;
-        return $this->cache->save($data, $identifier);
+        $identifier = self::OD_CACHE_PREFIX . '_' . $checkKey;
+        return $this->cache->save($status . self::DATA_SEPARATOR . $data, $identifier);
     }
 
     public function updateCheckData(string $checkKey, string $status, string $data)
     {
-        $this->removeCheckData($checkKey);
         return $this->saveCheckData($checkKey, $status, $data);
     }
 }

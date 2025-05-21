@@ -5,6 +5,7 @@
 
 namespace Vendic\OhDear\Test\Integration\Checks;
 
+use Magento\Framework\App\CacheInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\TestFramework\Helper\Bootstrap;
 use Magento\TestFramework\ObjectManager;
@@ -12,6 +13,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Vendic\OhDear\Api\Data\CheckStatus;
 use Vendic\OhDear\Checks\PhpFpmCount;
+use Vendic\OhDear\Model\CachedStatusResolver;
+use Vendic\OhDear\Service\CacheService;
 use Vendic\OhDear\Utils\Shell as ShellUtils;
 
 /**
@@ -67,8 +70,15 @@ class PhpFpmCountTest extends TestCase
     /**
      * @dataProvider phpFpmCountDataProvider
      */
-    public function testCheck(int $phpFpmCount, CheckStatus $expectedStatus): void
-    {
+    public function testCheck(
+        int $phpFpmCount,
+        array $cachedData,
+        CheckStatus $expectedStatus,
+        string $expectedMessage
+    ): void {
+        /** @var ObjectManager $objectManager */
+        $objectManager = Bootstrap::getObjectManager();
+
         /** @var ShellUtils & MockObject $shellUtilsMock */
         $shellUtilsMock = $this->getMockBuilder(ShellUtils::class)
             ->disableOriginalConstructor()
@@ -77,9 +87,40 @@ class PhpFpmCountTest extends TestCase
         $shellUtilsMock->method('isMacOS')->willReturn(false);
         $shellUtilsMock->method('getPhpFpmProcessCount')->willReturn($phpFpmCount);
 
-        /** @var ObjectManager $objectManager */
-        $objectManager = Bootstrap::getObjectManager();
+        /** @var ShellUtils & MockObject $shellUtilsMock */
+        $cacheServiceMock = $this->getMockBuilder(CacheService::class)
+            ->setConstructorArgs([$objectManager->get(CacheInterface::class)])
+            ->onlyMethods(['getDataForCheck'])
+            ->getMock();
+
+        $cacheServiceMock->method('getDataForCheck')->willReturn($cachedData);
+
+        $statusResolverMock = $this->getMockBuilder(CachedStatusResolver::class)
+            ->setConstructorArgs([$cacheServiceMock])
+            ->onlyMethods(['getMessagesByStatus'])
+            ->getMock();
+
+        $statusResolverMock->method('getMessagesByStatus')->willReturn([
+            CachedStatusResolver::STATUS_OK => [
+                'summary' => CachedStatusResolver::STATUS_OK,
+            ],
+            CachedStatusResolver::STATUS_CHANGE => [
+                'summary' => CachedStatusResolver::STATUS_CHANGE,
+                'notification_message' => CachedStatusResolver::STATUS_CHANGE,
+            ],
+            CachedStatusResolver::STATUS_IN_THRESHOLD => [
+                'summary' => CachedStatusResolver::STATUS_IN_THRESHOLD,
+                'notification_message' => CachedStatusResolver::STATUS_IN_THRESHOLD,
+            ],
+            CachedStatusResolver::STATUS_FAIL => [
+                'summary' => CachedStatusResolver::STATUS_FAIL,
+                'notification_message' => CachedStatusResolver::STATUS_FAIL,
+            ],
+        ]);
+
         $objectManager->addSharedInstance($shellUtilsMock, ShellUtils::class);
+        $objectManager->addSharedInstance($cacheServiceMock, CacheService::class);
+        $objectManager->addSharedInstance($statusResolverMock, CachedStatusResolver::class);
 
         /** @var PhpFpmCount $phpFpmCheck */
         $phpFpmCheck = $objectManager->get(PhpFpmCount::class);
@@ -87,14 +128,36 @@ class PhpFpmCountTest extends TestCase
 
         $this->assertEquals('php_fpm_count', $checkResult->getName());
         $this->assertEquals($expectedStatus, $checkResult->getStatus());
+        $this->assertEquals($expectedMessage, $checkResult->getShortSummary());
     }
 
     public function phpFpmCountDataProvider(): array
     {
         return [
-            [1, CheckStatus::STATUS_OK],
-            [61, CheckStatus::STATUS_WARNING],
-            [76, CheckStatus::STATUS_FAILED],
+            [
+                1,
+                ['status' => CheckStatus::STATUS_FAILED->value, 'data' => time()],
+                CheckStatus::STATUS_OK,
+                CachedStatusResolver::STATUS_OK
+            ],
+            [
+                61,
+                ['status' => CheckStatus::STATUS_FAILED->value, 'data' => time()],
+                CheckStatus::STATUS_OK,
+                CachedStatusResolver::STATUS_CHANGE
+            ],
+            [
+                76,
+                ['status' => CheckStatus::STATUS_FAILED->value, 'data' => time()],
+                CheckStatus::STATUS_OK,
+                CachedStatusResolver::STATUS_IN_THRESHOLD
+            ],
+            [
+                76,
+                ['status' => CheckStatus::STATUS_FAILED->value, 'data' => (string)(time() - (1 * 24 * 3600))],
+                CheckStatus::STATUS_FAILED,
+                CachedStatusResolver::STATUS_FAIL
+            ],
         ];
     }
 }
