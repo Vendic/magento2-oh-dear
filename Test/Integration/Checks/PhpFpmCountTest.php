@@ -87,7 +87,7 @@ class PhpFpmCountTest extends TestCase
         $shellUtilsMock->method('isMacOS')->willReturn(false);
         $shellUtilsMock->method('getPhpFpmProcessCount')->willReturn($phpFpmCount);
 
-        /** @var ShellUtils & MockObject $shellUtilsMock */
+        /** @var CacheService & MockObject $shellUtilsMock */
         $cacheServiceMock = $this->getMockBuilder(CacheService::class)
             ->setConstructorArgs([$objectManager->get(CacheInterface::class)])
             ->onlyMethods(['getDataForCheck'])

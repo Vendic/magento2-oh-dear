@@ -9,7 +9,9 @@ use Magento\Framework\App\ResourceConnection;
 use Vendic\OhDear\Api\CheckInterface;
 use Vendic\OhDear\Api\Data\CheckResultInterface;
 use Vendic\OhDear\Api\Data\CheckStatus;
+use Vendic\OhDear\Model\CachedStatusResolver;
 use Vendic\OhDear\Model\CheckResultFactory;
+use Vendic\OhDear\Service\CacheService;
 use Vendic\OhDear\Utils\Configuration;
 use Vendic\OhDear\Utils\Database as DatabseUtils;
 
@@ -23,7 +25,10 @@ class DatabaseConnectionCount implements CheckInterface
         private DatabseUtils $databaseUtils,
         private Configuration $configuration,
         private int $warningThreshold,
-        private int $failedTreshold
+        private int $failedTreshold,
+        private int $statusTimeThreshold,
+        private CachedStatusResolver $cachedStatusResolver,
+        private CacheService $cacheService
     ) {
     }
 
@@ -39,6 +44,7 @@ class DatabaseConnectionCount implements CheckInterface
             $checkResult->setStatus(CheckStatus::STATUS_CRASHED);
             $checkResult->setNotificationMessage($e->getMessage());
             $checkResult->setShortSummary('Could not get database connection count');
+            $this->cacheService->removeCheckData($checkResult->getName());
             return $checkResult;
         }
 
@@ -48,23 +54,40 @@ class DatabaseConnectionCount implements CheckInterface
             ]
         );
 
+        return $this->processStatus($checkResult, $connectionCount);
+    }
+
+    private function processStatus(CheckResultInterface $checkResult, int $connectionCount): CheckResultInterface
+    {
+        $this->cachedStatusResolver->setStatusTimeThreshold($this->getStatusTimeThreshold());
+
         if ($connectionCount > $this->getFailedTreshold()) {
-            $checkResult->setStatus(CheckStatus::STATUS_FAILED);
-            $checkResult->setNotificationMessage('Database connection error count is too high');
-            $checkResult->setShortSummary(self::CONNECTIONS_TO_HIGH_SUMMARY);
-            return $checkResult;
+            return $this->cachedStatusResolver->updateCacheCheck(
+                $checkResult,
+                CheckStatus::STATUS_FAILED,
+                $connectionCount
+            );
         }
 
         if ($connectionCount > $this->getWarningThreshold()) {
-            $checkResult->setStatus(CheckStatus::STATUS_WARNING);
-            $checkResult->setNotificationMessage('Database connection warning: count is too high');
-            $checkResult->setShortSummary(self::CONNECTIONS_TO_HIGH_SUMMARY);
-            return $checkResult;
+            return $this->cachedStatusResolver->updateCacheCheck(
+                $checkResult,
+                CheckStatus::STATUS_WARNING,
+                $connectionCount
+            );
         }
 
-        $checkResult->setStatus(CheckStatus::STATUS_OK);
-        $checkResult->setShortSummary(self::OK_SUMMARY);
-        return $checkResult;
+        return $this->cachedStatusResolver->updateCacheCheck(
+            $checkResult,
+            CheckStatus::STATUS_OK,
+            $connectionCount
+        );
+    }
+
+    private function getStatusTimeThreshold(): int
+    {
+        $configValue = $this->configuration->getCheckConfigValue($this, 'status_time_treshold');
+        return is_numeric($configValue) ? (int) $configValue : $this->statusTimeThreshold;
     }
 
     private function getFailedTreshold(): int
