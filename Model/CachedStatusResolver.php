@@ -84,7 +84,7 @@ class CachedStatusResolver
                     $this->getMessagesByStatus()[self::STATUS_CHANGE]['notification_message'],
                     $checkResult->getLabel(),
                     $status->value,
-                    $checkValue ?? 'unknown'
+                    $checkValue
                 )
             );
 
@@ -106,7 +106,7 @@ class CachedStatusResolver
                     $this->getMessagesByStatus()[self::STATUS_IN_THRESHOLD]['notification_message'],
                     $checkResult->getLabel(),
                     $status->value,
-                    $checkValue ?? 'unknown',
+                    $checkValue,
                     $this->getStatusTimeThreshold()
                 )
             );
@@ -120,7 +120,7 @@ class CachedStatusResolver
             sprintf(
                 $this->getMessagesByStatus()[self::STATUS_FAIL]['summary'],
                 $checkResult->getLabel(),
-                $checkValue ?? 'unknown'
+                $checkValue
             )
         );
         $checkResult->setShortSummary(
