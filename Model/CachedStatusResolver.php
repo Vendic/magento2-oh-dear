@@ -54,7 +54,7 @@ class CachedStatusResolver
     public function updateCacheCheck(
         CheckResultInterface $checkResult,
         CheckStatus $status,
-        int $processCount = 0
+        int $checkValue = 0
     ): CheckResultInterface {
         $checkCache = $this->cacheService->getDataForCheck($checkResult->getName());
 
@@ -84,7 +84,7 @@ class CachedStatusResolver
                     $this->getMessagesByStatus()[self::STATUS_CHANGE]['notification_message'],
                     $checkResult->getLabel(),
                     $status->value,
-                    $checkResult->getMeta()['php_fpm_count'] ?? 'unknown'
+                    $checkValue ?? 'unknown'
                 )
             );
 
@@ -106,7 +106,7 @@ class CachedStatusResolver
                     $this->getMessagesByStatus()[self::STATUS_IN_THRESHOLD]['notification_message'],
                     $checkResult->getLabel(),
                     $status->value,
-                    $checkResult->getMeta()['php_fpm_count'] ?? 'unknown',
+                    $checkValue ?? 'unknown',
                     $this->getStatusTimeThreshold()
                 )
             );
@@ -120,7 +120,7 @@ class CachedStatusResolver
             sprintf(
                 $this->getMessagesByStatus()[self::STATUS_FAIL]['summary'],
                 $checkResult->getLabel(),
-                $processCount
+                $checkValue ?? 'unknown'
             )
         );
         $checkResult->setShortSummary(
@@ -136,6 +136,16 @@ class CachedStatusResolver
     public function getMessagesByStatus(): array
     {
         return $this->messagesByStatus;
+    }
+
+    public function setMessagesByStatus(array $messagesByStatus): self
+    {
+        $this->messagesByStatus = array_replace_recursive(
+            $this->messagesByStatus,
+            $messagesByStatus
+        );
+
+        return $this;
     }
 
     private function getStatusTimeThreshold(): int

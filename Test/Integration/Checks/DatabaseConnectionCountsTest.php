@@ -65,36 +65,6 @@ class DatabaseConnectionCountsTest extends TestCase
         $this->assertEquals($expectedMessage, $checkResult->getShortSummary());
     }
 
-    public function databaseConnectionCountDataProvider(): array
-    {
-        return [
-            [
-                50,
-                ['status' => CheckStatus::STATUS_FAILED->value, 'data' => time()],
-                CheckStatus::STATUS_OK,
-                CachedStatusResolver::STATUS_OK
-            ],
-            [
-                51,
-                ['status' => CheckStatus::STATUS_FAILED->value, 'data' => time()],
-                CheckStatus::STATUS_OK,
-                CachedStatusResolver::STATUS_CHANGE
-            ],
-            [
-                101,
-                ['status' => CheckStatus::STATUS_FAILED->value, 'data' => time()],
-                CheckStatus::STATUS_OK,
-                CachedStatusResolver::STATUS_IN_THRESHOLD
-            ],
-            [
-                101,
-                ['status' => CheckStatus::STATUS_FAILED->value, 'data' => (string)(time() - (24 * 3600))],
-                CheckStatus::STATUS_FAILED,
-                CachedStatusResolver::STATUS_FAIL
-            ]
-        ];
-    }
-
     /**
      * @param ObjectManager $objectManager
      * @param array|null $cachedData
@@ -135,5 +105,35 @@ class DatabaseConnectionCountsTest extends TestCase
 
         $objectManager->addSharedInstance($cacheServiceMock, CacheService::class);
         $objectManager->addSharedInstance($statusResolverMock, CachedStatusResolver::class);
+    }
+
+    public function databaseConnectionCountDataProvider(): array
+    {
+        return [
+            [
+                50,
+                ['status' => CheckStatus::STATUS_FAILED->value, 'data' => time()],
+                CheckStatus::STATUS_OK,
+                CachedStatusResolver::STATUS_OK
+            ],
+            [
+                51,
+                ['status' => CheckStatus::STATUS_FAILED->value, 'data' => time()],
+                CheckStatus::STATUS_OK,
+                CachedStatusResolver::STATUS_CHANGE
+            ],
+            [
+                101,
+                ['status' => CheckStatus::STATUS_FAILED->value, 'data' => time()],
+                CheckStatus::STATUS_OK,
+                CachedStatusResolver::STATUS_IN_THRESHOLD
+            ],
+            [
+                101,
+                ['status' => CheckStatus::STATUS_FAILED->value, 'data' => (string)(time() - (24 * 3600))],
+                CheckStatus::STATUS_FAILED,
+                CachedStatusResolver::STATUS_FAIL
+            ]
+        ];
     }
 }
