@@ -40,7 +40,6 @@ class CachedStatusResolverTest extends TestCase
                         'notification_message' => CachedStatusResolver::STATUS_FAIL,
                     ],
                 ]
-
             );
 
         $objectManager->addSharedInstance($statusResolver, CachedStatusResolver::class);
@@ -70,7 +69,6 @@ class CachedStatusResolverTest extends TestCase
             $checkResult,
             CheckStatus::STATUS_OK
         );
-
 
         $this->assertEquals(CheckStatus::STATUS_OK, $checkResult->getStatus());
         $this->assertEquals(CachedStatusResolver::STATUS_OK, $checkResult->getShortSummary());
