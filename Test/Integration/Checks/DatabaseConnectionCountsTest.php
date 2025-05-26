@@ -16,6 +16,10 @@ use Vendic\OhDear\Model\CachedStatusResolver;
 use Vendic\OhDear\Service\CacheService;
 use Vendic\OhDear\Utils\Database as DbUtils;
 
+/**
+ * @magentoDbIsolation enabled
+ * @magentoAppIsolation enabled
+ */
 class DatabaseConnectionCountsTest extends TestCase
 {
     public function testDatabaseConnectionCountOk(): void
@@ -32,7 +36,6 @@ class DatabaseConnectionCountsTest extends TestCase
     }
 
     /**
-     * @magentoAppIsolation enabled
      * @dataProvider databaseConnectionCountDataProvider
      */
     public function testDatabaseConnectionCountWarning(
