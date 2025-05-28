@@ -25,6 +25,14 @@ class CachedStatusResolver
     public const STATUS_FAIL = 'status_fail';
     /** #@- */
 
+    public const STATUSES_BY_SEVERITY = [
+        CheckStatus::STATUS_FAILED->value => 50,
+        CheckStatus::STATUS_WARNING->value => 40,
+        CheckStatus::STATUS_CRASHED->value => 30,
+        CheckStatus::STATUS_SKIPPED->value => 20,
+        CheckStatus::STATUS_OK->value => 10,
+    ];
+
     private const MESSAGES_BY_STATUS_DEFAULT = [
         self::STATUS_OK => [
             'summary' => '%s is OK',
@@ -74,8 +82,10 @@ class CachedStatusResolver
 
         // Status changed, reset time for selected status
         if (($checkCache['status'] ?? null) !== $status->value) {
+            $cachedStatus = $checkCache['status'] ?? CheckStatus::STATUS_OK->value;
             $this->cacheService->updateCheckData($checkResult->getName(), $status->value, (string)time());
-            $checkResult->setStatus(CheckStatus::STATUS_OK);
+
+            $checkResult->setStatus($this->getFlappingStatus($cachedStatus, $status->value));
             $checkResult->setShortSummary(
                 sprintf($this->getMessagesByStatus()[self::STATUS_CHANGE]['summary'], $checkResult->getLabel())
             );
@@ -93,7 +103,10 @@ class CachedStatusResolver
 
         // Status does not exceed the threshold, keep as it is
         if ((int)$checkCache['data'] > (time() - $this->getStatusTimeThreshold() * 60)) {
-            $checkResult->setStatus(CheckStatus::STATUS_OK);
+            $checkResult->setStatus($this->getFlappingStatus(
+                $checkCache['fallback_status'] ?? CheckStatus::STATUS_OK->value,
+                $status->value
+            ));
             $checkResult->setShortSummary(
                 sprintf(
                     $this->getMessagesByStatus()[self::STATUS_IN_THRESHOLD]['summary'],
@@ -146,6 +159,18 @@ class CachedStatusResolver
         );
 
         return $this;
+    }
+
+    public function getFlappingStatus(string $oldStatus, string $newStatus): CheckStatus
+    {
+        $statusToSet = CheckStatus::STATUS_OK;
+        if (self::STATUSES_BY_SEVERITY[$oldStatus] < self::STATUSES_BY_SEVERITY[$newStatus]) {
+            $statusToSet = "STATUS_" . strtoupper($oldStatus);
+        } else {
+            $statusToSet = "STATUS_" . strtoupper($newStatus);
+        }
+
+        return CheckStatus::{$statusToSet};
     }
 
     private function getStatusTimeThreshold(): int

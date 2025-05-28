@@ -122,13 +122,23 @@ class DatabaseConnectionCountsTest extends TestCase
             [
                 51,
                 ['status' => CheckStatus::STATUS_FAILED->value, 'data' => time()],
-                CheckStatus::STATUS_OK,
+                CheckStatus::STATUS_WARNING,
                 CachedStatusResolver::STATUS_CHANGE
             ],
             [
                 101,
                 ['status' => CheckStatus::STATUS_FAILED->value, 'data' => time()],
                 CheckStatus::STATUS_OK,
+                CachedStatusResolver::STATUS_IN_THRESHOLD
+            ],
+            [
+                101,
+                [
+                    'status' => CheckStatus::STATUS_FAILED->value,
+                    'fallback_status' => CheckStatus::STATUS_WARNING->value,
+                    'data' => time()
+                ],
+                CheckStatus::STATUS_WARNING,
                 CachedStatusResolver::STATUS_IN_THRESHOLD
             ],
             [

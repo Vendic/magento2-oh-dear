@@ -75,7 +75,10 @@ class CachedStatusResolverTest extends TestCase
         $this->assertEquals(null, $cacheService->getDataForCheck($checkResult->getName()));
     }
 
-    public function testStatusChange(): void
+    /**
+     * @dataProvider statusFlappingDataProvider
+     */
+    public function testStatusChange(string $cachedStatus, CheckStatus $currentStatus, string $expectedStatus): void
     {
         $objectManager = Bootstrap::getObjectManager();
 
@@ -86,7 +89,7 @@ class CachedStatusResolverTest extends TestCase
 
         $cacheService->saveCheckData(
             $checkResult->getName(),
-            CheckStatus::STATUS_FAILED->value,
+            $cachedStatus,
             (string)time()
         );
 
@@ -94,14 +97,14 @@ class CachedStatusResolverTest extends TestCase
 
         $checkResult = $statusResolver->updateCacheCheck(
             $checkResult,
-            CheckStatus::STATUS_WARNING
+            $currentStatus
         );
 
-        $this->assertEquals(CheckStatus::STATUS_OK, $checkResult->getStatus());
+        $this->assertEquals($expectedStatus, $checkResult->getStatus()->value);
         $this->assertEquals(CachedStatusResolver::STATUS_CHANGE, $checkResult->getShortSummary());
 
-        $cachedStatus = $cacheService->getDataForCheck($checkResult->getName())['status'];
-        $this->assertEquals(CheckStatus::STATUS_WARNING->value, $cachedStatus);
+        $savedStatus = $cacheService->getDataForCheck($checkResult->getName())['status'];
+        $this->assertEquals($currentStatus->value, $savedStatus);
     }
 
     public function testStatusInThreshold(): void
@@ -116,6 +119,7 @@ class CachedStatusResolverTest extends TestCase
         // 4 minutes ago
         $referenceCacheTime = (string)(time() - 4 * 60);
 
+        $cacheService->removeCheckData($checkResult->getName(), true);
         $cacheService->saveCheckData(
             $checkResult->getName(),
             CheckStatus::STATUS_FAILED->value,
@@ -178,6 +182,27 @@ class CachedStatusResolverTest extends TestCase
         $cachedValue = $cacheService->getDataForCheck($checkResult->getName());
         $this->assertEquals($status->value, $cachedValue['status']);
         $this->assertEquals($referenceCacheTime, $cachedValue['data']);
+    }
+
+    public function statusFlappingDataProvider()
+    {
+        return [
+            [
+                CheckStatus::STATUS_OK->value,
+                CheckStatus::STATUS_WARNING,
+                CheckStatus::STATUS_OK->value,
+            ],
+            [
+                CheckStatus::STATUS_FAILED->value,
+                CheckStatus::STATUS_WARNING,
+                CheckStatus::STATUS_WARNING->value,
+            ],
+            [
+                CheckStatus::STATUS_WARNING->value,
+                CheckStatus::STATUS_FAILED,
+                CheckStatus::STATUS_WARNING->value,
+            ]
+        ];
     }
 
     public function failStatusesDataProvider()

@@ -37,23 +37,41 @@ class CacheService
         ];
 
         $identifier = self::OD_CACHE_PREFIX . '_' . $checkKey;
+        $fallbackRecordIdentifier = self::OD_CACHE_PREFIX . '_fallback_' . $checkKey;
 
         if (!$cacheData = $this->cache->load($identifier)) {
             return null;
         }
 
+        $fallbackData = $this->cache->load($fallbackRecordIdentifier) ?? null;
+
         [$severity, $data] = explode(self::DATA_SEPARATOR, $cacheData, 2);
+
+        $fallbackSeverity = null;
+        if ($fallbackData) {
+            [$fallbackSeverity] = explode(self::DATA_SEPARATOR, $fallbackData);
+        }
 
         $result['data'] = $data;
         $result['status'] = $severity;
+        $result['fallback_status'] = $fallbackSeverity ?? CheckStatus::STATUS_OK->value;
 
         return $result['data'] ? $result : null;
     }
 
-    public function removeCheckData(string $checkKey): bool
+    public function removeCheckData(string $checkKey, bool $removeFallback = false): bool
     {
         $result = false;
         $identifier = self::OD_CACHE_PREFIX . '_' . $checkKey;
+        $fallbackIdentifier = self::OD_CACHE_PREFIX . '_fallback_' . $checkKey;
+
+        if (($cachedData = $this->cache->load($identifier)) && !$removeFallback) {
+            $this->cache->save($cachedData, $fallbackIdentifier);
+        }
+
+        if ($removeFallback) {
+            $this->cache->remove($fallbackIdentifier);
+        }
 
         return $this->cache->remove($identifier);
     }
@@ -61,6 +79,11 @@ class CacheService
     public function saveCheckData(string $checkKey, string $status, string $data): bool
     {
         $identifier = self::OD_CACHE_PREFIX . '_' . $checkKey;
+        $fallbackRecordIdentifier = self::OD_CACHE_PREFIX . '_fallback_' . $checkKey;
+
+        if ($currentData = $this->cache->load($identifier)) {
+            $this->cache->save($currentData, $fallbackRecordIdentifier);
+        }
         return $this->cache->save($status . self::DATA_SEPARATOR . $data, $identifier);
     }
 
