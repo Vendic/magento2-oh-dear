@@ -104,7 +104,7 @@ class CachedStatusResolver
         // Status does not exceed the threshold, keep as it is
         if ((int)$checkCache['data'] > (time() - $this->getStatusTimeThreshold() * 60)) {
             $checkResult->setStatus($this->getFlappingStatus(
-                $checkCache['fallback_status'] ?? CheckStatus::STATUS_OK->value,
+                $checkCache['fallback_status'],
                 $status->value
             ));
             $checkResult->setShortSummary(

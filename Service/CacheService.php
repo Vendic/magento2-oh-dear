@@ -23,9 +23,9 @@ class CacheService
     }
 
     /**
-     * @param string $checkKey
      * @return array{
      *     status: string,
+     *     fallback_status: string,
      *     data: string
      * }|null
      */
@@ -43,7 +43,7 @@ class CacheService
             return null;
         }
 
-        $fallbackData = $this->cache->load($fallbackRecordIdentifier) ?? null;
+        $fallbackData = $this->cache->load($fallbackRecordIdentifier) ?: null;
 
         [$severity, $data] = explode(self::DATA_SEPARATOR, $cacheData, 2);
 
@@ -87,7 +87,7 @@ class CacheService
         return $this->cache->save($status . self::DATA_SEPARATOR . $data, $identifier);
     }
 
-    public function updateCheckData(string $checkKey, string $status, string $data)
+    public function updateCheckData(string $checkKey, string $status, string $data): bool
     {
         return $this->saveCheckData($checkKey, $status, $data);
     }
