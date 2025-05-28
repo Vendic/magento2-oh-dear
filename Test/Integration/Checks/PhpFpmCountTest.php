@@ -136,19 +136,31 @@ class PhpFpmCountTest extends TestCase
         return [
             [
                 1,
-                ['status' => CheckStatus::STATUS_FAILED->value, 'data' => time()],
+                [
+                    'status' => CheckStatus::STATUS_FAILED->value,
+                    'fallback_status' => CheckStatus::STATUS_OK->value,
+                    'data' => time()
+                ],
                 CheckStatus::STATUS_OK,
                 CachedStatusResolver::STATUS_OK
             ],
             [
                 61,
-                ['status' => CheckStatus::STATUS_FAILED->value, 'data' => time()],
+                [
+                    'status' => CheckStatus::STATUS_FAILED->value,
+                    'fallback_status' => CheckStatus::STATUS_OK->value,
+                    'data' => time()
+                ],
                 CheckStatus::STATUS_WARNING,
                 CachedStatusResolver::STATUS_CHANGE
             ],
             [
                 76,
-                ['status' => CheckStatus::STATUS_FAILED->value, 'data' => time()],
+                [
+                    'status' => CheckStatus::STATUS_FAILED->value,
+                    'fallback_status' => CheckStatus::STATUS_OK->value,
+                    'data' => time()
+                ],
                 CheckStatus::STATUS_OK,
                 CachedStatusResolver::STATUS_IN_THRESHOLD
             ],
@@ -164,7 +176,11 @@ class PhpFpmCountTest extends TestCase
             ],
             [
                 76,
-                ['status' => CheckStatus::STATUS_FAILED->value, 'data' => (string)(time() - (1 * 24 * 3600))],
+                [
+                    'status' => CheckStatus::STATUS_FAILED->value,
+                    'fallback_status' => CheckStatus::STATUS_OK->value,
+                    'data' => (string)(time() - (1 * 24 * 3600))
+                ],
                 CheckStatus::STATUS_FAILED,
                 CachedStatusResolver::STATUS_FAIL
             ],

@@ -115,19 +115,31 @@ class DatabaseConnectionCountsTest extends TestCase
         return [
             [
                 50,
-                ['status' => CheckStatus::STATUS_FAILED->value, 'data' => time()],
+                [
+                    'status' => CheckStatus::STATUS_FAILED->value,
+                    'fallback_status' => CheckStatus::STATUS_OK->value,
+                    'data' => time()
+                ],
                 CheckStatus::STATUS_OK,
                 CachedStatusResolver::STATUS_OK
             ],
             [
                 51,
-                ['status' => CheckStatus::STATUS_FAILED->value, 'data' => time()],
+                [
+                    'status' => CheckStatus::STATUS_FAILED->value,
+                    'fallback_status' => CheckStatus::STATUS_OK->value,
+                    'data' => time()
+                ],
                 CheckStatus::STATUS_WARNING,
                 CachedStatusResolver::STATUS_CHANGE
             ],
             [
                 101,
-                ['status' => CheckStatus::STATUS_FAILED->value, 'data' => time()],
+                [
+                    'status' => CheckStatus::STATUS_FAILED->value,
+                    'fallback_status' => CheckStatus::STATUS_OK->value,
+                    'data' => time()
+                ],
                 CheckStatus::STATUS_OK,
                 CachedStatusResolver::STATUS_IN_THRESHOLD
             ],
@@ -143,7 +155,11 @@ class DatabaseConnectionCountsTest extends TestCase
             ],
             [
                 101,
-                ['status' => CheckStatus::STATUS_FAILED->value, 'data' => (string)(time() - (24 * 3600))],
+                [
+                    'status' => CheckStatus::STATUS_FAILED->value,
+                    'fallback_status' => CheckStatus::STATUS_OK->value,
+                    'data' => (string)(time() - (24 * 3600))
+                ],
                 CheckStatus::STATUS_FAILED,
                 CachedStatusResolver::STATUS_FAIL
             ]
