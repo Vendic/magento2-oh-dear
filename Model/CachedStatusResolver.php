@@ -163,14 +163,14 @@ class CachedStatusResolver
 
     public function getFlappingStatus(string $oldStatus, string $newStatus): CheckStatus
     {
-        $statusToSet = CheckStatus::STATUS_OK;
+        $statusToSet = CheckStatus::STATUS_OK->name;
         if (self::STATUSES_BY_SEVERITY[$oldStatus] < self::STATUSES_BY_SEVERITY[$newStatus]) {
             $statusToSet = "STATUS_" . strtoupper($oldStatus);
         } else {
             $statusToSet = "STATUS_" . strtoupper($newStatus);
         }
 
-        return CheckStatus::{$statusToSet};
+        return constant("\Vendic\OhDear\Api\Data\CheckStatus::{$statusToSet}");
     }
 
     private function getStatusTimeThreshold(): int
