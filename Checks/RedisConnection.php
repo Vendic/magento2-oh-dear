@@ -19,7 +19,8 @@ class RedisConnection implements CheckInterface
     public function __construct(
         private DeploymentConfig $deploymentConfig,
         private Cache $cache,
-        private CheckResultFactory $checkResultFactory
+        private CheckResultFactory $checkResultFactory,
+        private bool $enforce_redis = false
     ) {
     }
 
@@ -41,7 +42,9 @@ class RedisConnection implements CheckInterface
         );
 
         if ($this->checkisRedisEnabled($deploymentConfig) === false) {
-            $checkResult->setStatus(CheckStatus::STATUS_SKIPPED);
+            $checkResult->setStatus(
+                $this->enforce_redis ? CheckStatus::STATUS_FAILED : CheckStatus::STATUS_SKIPPED
+            );
             $checkResult->setShortSummary('Redis disabled');
             $checkResult->setNotificationMessage('Redis is not enabled');
             return $checkResult;
