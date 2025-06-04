@@ -30,7 +30,7 @@ class RedisConnectionTest extends TestCase
     {
         /** @var RedisConnection $redisConnectionCheck */
         $redisConnectionCheck = Bootstrap::getObjectManager()->create(RedisConnection::class, [
-            'enforce_redis' => true,
+            'enforceRedis' => true,
         ]);
 
         $output = $redisConnectionCheck->run();
