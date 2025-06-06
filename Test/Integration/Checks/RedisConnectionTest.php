@@ -25,4 +25,20 @@ class RedisConnectionTest extends TestCase
             'Redis connection check should be skipped when Redis is not enabled'
         );
     }
+
+    public function testRedisConnectionEnforceRedis(): void
+    {
+        /** @var RedisConnection $redisConnectionCheck */
+        $redisConnectionCheck = Bootstrap::getObjectManager()->create(RedisConnection::class, [
+            'enforceRedis' => true,
+        ]);
+
+        $output = $redisConnectionCheck->run();
+        $this->assertEquals('redis_connection', $output->getName());
+        $this->assertEquals(
+            CheckStatus::STATUS_FAILED,
+            $output->getStatus(),
+            'Redis connection check should be skipped when Redis is not enabled'
+        );
+    }
 }
