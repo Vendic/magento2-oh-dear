@@ -15,7 +15,9 @@ class RedisConnectionTest extends TestCase
     public function testRedisConnectionWarning(): void
     {
         /** @var RedisConnection $redisConnectionCheck */
-        $redisConnectionCheck = Bootstrap::getObjectManager()->get(RedisConnection::class);
+        $redisConnectionCheck = Bootstrap::getObjectManager()->create(RedisConnection::class, [
+            'enforceRedis' => false,
+        ]);
 
         $output = $redisConnectionCheck->run();
         $this->assertEquals('redis_connection', $output->getName());
