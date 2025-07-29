@@ -16,8 +16,6 @@ class CacheService
 {
     private const OD_CACHE_PREFIX = 'oh_dear';
 
-    private const DATA_SEPARATOR = '==>>';
-
     public function __construct(
         private readonly CacheInterface $cache,
         private readonly Json $serializer
@@ -28,7 +26,8 @@ class CacheService
      * @return array{
      *     status: string,
      *     fallback_status: string,
-     *     data: string
+     *     data: string|array,
+     *     fallback_data: array
      * }|null
      */
     public function getDataForCheck(string $checkKey): ?array
