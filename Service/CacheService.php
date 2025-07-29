@@ -6,6 +6,8 @@
 
 declare(strict_types=1);
 
+// phpcs:disable PSR2.ControlStructures.ControlStructureSpacing.SpacingAfterOpenBrace
+
 namespace Vendic\OhDear\Service;
 
 use Magento\Framework\App\CacheInterface;
