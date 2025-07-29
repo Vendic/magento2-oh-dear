@@ -94,6 +94,7 @@ class CacheService
             }
 
             unset($payload['fallback_data']['fallback_data']);
+        // phpcs:ignore
         } catch (\Exception $exception) {
             // Literally do nothing, that simply means fallback data cannot be extracted
         }
