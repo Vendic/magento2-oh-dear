@@ -75,7 +75,7 @@ class CachedStatusResolver
                     $checkResult->getLabel()
                 )
             );
-            $this->cacheService->removeCheckData($checkResult->getName());
+            $this->cacheService->saveCheckData($checkResult->getName(), $status->value, (string)$this->getTime());
 
             return $checkResult;
         }
@@ -83,9 +83,20 @@ class CachedStatusResolver
         // Status changed, reset time for selected status
         if (($checkCache['status'] ?? null) !== $status->value) {
             $cachedStatus = $checkCache['status'] ?? CheckStatus::STATUS_OK->value;
-            $this->cacheService->updateCheckData($checkResult->getName(), $status->value, (string)time());
+            $cachedFallbackStatus = $checkCache['fallback_status'] ?? CheckStatus::STATUS_OK->value;
+            $persistFallback = $this->exceedsThreshold((int)($checkCache['fallback_data']['data'] ?? 0));
 
-            $checkResult->setStatus($this->getFlappingStatus($cachedStatus, $status->value));
+            $this->cacheService->saveCheckData(
+                $checkResult->getName(),
+                $status->value,
+                (string)$this->getTime(),
+                $persistFallback
+            );
+
+            $checkResult->setStatus($this->getFlappingStatus(
+                $persistFallback ? $cachedFallbackStatus : $cachedStatus,
+                $status->value
+            ));
             $checkResult->setShortSummary(
                 sprintf($this->getMessagesByStatus()[self::STATUS_CHANGE]['summary'], $checkResult->getLabel())
             );
@@ -102,7 +113,7 @@ class CachedStatusResolver
         }
 
         // Status does not exceed the threshold, keep as it is
-        if ((int)$checkCache['data'] > (time() - $this->getStatusTimeThreshold() * 60)) {
+        if ($this->exceedsThreshold((int)$checkCache['data'])) {
             $checkResult->setStatus($this->getFlappingStatus(
                 $checkCache['fallback_status'],
                 $status->value
@@ -173,6 +184,11 @@ class CachedStatusResolver
         return constant("\Vendic\OhDear\Api\Data\CheckStatus::{$statusToSet}");
     }
 
+    private function exceedsThreshold(int $time): bool
+    {
+        return $time > ($this->getTime() - $this->getStatusTimeThreshold() * 60);
+    }
+
     private function getStatusTimeThreshold(): int
     {
         return $this->statusTimeThreshold;
@@ -182,5 +198,10 @@ class CachedStatusResolver
     {
         $this->statusTimeThreshold = $statusTimeThreshold;
         return $this;
+    }
+
+    public function getTime(): int
+    {
+        return time();
     }
 }

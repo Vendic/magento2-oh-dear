@@ -17,12 +17,15 @@ use Vendic\OhDear\Service\CacheService;
 
 class CachedStatusResolverTest extends TestCase
 {
+    private const CURR_TIME = 1753797380;
+
     protected function setUp(): void
     {
         $objectManager = Bootstrap::getObjectManager();
 
-        $statusResolver = $objectManager->get(CachedStatusResolver::class)
-            ->setMessagesByStatus(
+        $statusResolver = $this->getMockBuilder(CachedStatusResolver::class)
+            ->setConstructorArgs([
+                $objectManager->get(CacheService::class),
                 [
                     CachedStatusResolver::STATUS_OK => [
                         'summary' => CachedStatusResolver::STATUS_OK,
@@ -40,7 +43,11 @@ class CachedStatusResolverTest extends TestCase
                         'notification_message' => CachedStatusResolver::STATUS_FAIL,
                     ],
                 ]
-            );
+            ])
+            ->onlyMethods(['getTime'])
+            ->getMock();
+
+        $statusResolver->expects($this->any())->method('getTime')->willReturn(self::CURR_TIME);
 
         $objectManager->addSharedInstance($statusResolver, CachedStatusResolver::class);
 
@@ -60,7 +67,7 @@ class CachedStatusResolverTest extends TestCase
         $cacheService->saveCheckData(
             $checkResult->getName(),
             CheckStatus::STATUS_FAILED->value,
-            (string)time()
+            (string)self::CURR_TIME
         );
 
         $statusResolver = $objectManager->get(CachedStatusResolver::class);
@@ -72,7 +79,10 @@ class CachedStatusResolverTest extends TestCase
 
         $this->assertEquals(CheckStatus::STATUS_OK, $checkResult->getStatus());
         $this->assertEquals(CachedStatusResolver::STATUS_OK, $checkResult->getShortSummary());
-        $this->assertEquals(null, $cacheService->getDataForCheck($checkResult->getName()));
+        $this->assertEquals(
+            CheckStatus::STATUS_OK->value,
+            $cacheService->getDataForCheck($checkResult->getName())['status']
+        );
     }
 
     /**
@@ -90,7 +100,7 @@ class CachedStatusResolverTest extends TestCase
         $cacheService->saveCheckData(
             $checkResult->getName(),
             $cachedStatus,
-            (string)time()
+            (string)self::CURR_TIME
         );
 
         $statusResolver = $objectManager->get(CachedStatusResolver::class);
@@ -117,9 +127,14 @@ class CachedStatusResolverTest extends TestCase
             ->setLabel('Test Check');
 
         // 4 minutes ago
-        $referenceCacheTime = (string)(time() - 4 * 60);
+        $referenceCacheTime = (string)(self::CURR_TIME - 4 * 60);
 
         $cacheService->removeCheckData($checkResult->getName(), true);
+        $cacheService->saveCheckData(
+            $checkResult->getName(),
+            CheckStatus::STATUS_OK->value,
+            (string)($referenceCacheTime - 5)
+        );
         $cacheService->saveCheckData(
             $checkResult->getName(),
             CheckStatus::STATUS_FAILED->value,
@@ -138,10 +153,19 @@ class CachedStatusResolverTest extends TestCase
 
         $this->assertEquals(CheckStatus::STATUS_OK, $checkResult->getStatus());
         $this->assertEquals(CachedStatusResolver::STATUS_IN_THRESHOLD, $checkResult->getShortSummary());
-
         $cachedValue = $cacheService->getDataForCheck($checkResult->getName());
         $this->assertEquals(CheckStatus::STATUS_FAILED->value, $cachedValue['status']);
-        $this->assertEquals($referenceCacheTime, $cachedValue['data']);
+
+        $checkResult = $statusResolver->updateCacheCheck(
+            $checkResult,
+            CheckStatus::STATUS_WARNING
+        );
+
+        $this->assertEquals(CheckStatus::STATUS_OK, $checkResult->getStatus());
+        $this->assertEquals(CachedStatusResolver::STATUS_CHANGE, $checkResult->getShortSummary());
+
+        $cachedValue = $cacheService->getDataForCheck($checkResult->getName());
+        $this->assertEquals(CheckStatus::STATUS_WARNING->value, $cachedValue['status']);
     }
 
     /**
@@ -158,7 +182,7 @@ class CachedStatusResolverTest extends TestCase
             ->setLabel('Test Check');
 
         // 10 minutes ago
-        $referenceCacheTime = (string)(time() - 10 * 60);
+        $referenceCacheTime = (string)(self::CURR_TIME - 10 * 60);
 
         $cacheService->saveCheckData(
             $checkResult->getName(),

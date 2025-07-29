@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Vendic\OhDear\Service;
 
 use Magento\Framework\App\CacheInterface;
+use Magento\Framework\Serialize\Serializer\Json;
 use Vendic\OhDear\Api\Data\CheckStatus;
 
 class CacheService
@@ -19,6 +20,7 @@ class CacheService
 
     public function __construct(
         private readonly CacheInterface $cache,
+        private readonly Json $serializer
     ) {
     }
 
@@ -31,64 +33,70 @@ class CacheService
      */
     public function getDataForCheck(string $checkKey): ?array
     {
-        $result = [
-            'status' => null,
-            'data' => null
-        ];
-
         $identifier = self::OD_CACHE_PREFIX . '_' . $checkKey;
-        $fallbackRecordIdentifier = self::OD_CACHE_PREFIX . '_fallback_' . $checkKey;
 
         if (!$cacheData = $this->cache->load($identifier)) {
             return null;
         }
 
-        $fallbackData = $this->cache->load($fallbackRecordIdentifier) ?: null;
-
-        [$severity, $data] = explode(self::DATA_SEPARATOR, $cacheData, 2);
-
-        $fallbackSeverity = null;
-        if ($fallbackData) {
-            [$fallbackSeverity] = explode(self::DATA_SEPARATOR, $fallbackData);
-        }
-
-        $result['data'] = $data;
-        $result['status'] = $severity;
-        $result['fallback_status'] = $fallbackSeverity ?? CheckStatus::STATUS_OK->value;
+        $result = $this->serializer->unserialize($cacheData);
+        $result['fallback_status'] = $result['fallback_data']['status'] ?? CheckStatus::STATUS_OK->value;
 
         return $result['data'] ? $result : null;
     }
 
-    public function removeCheckData(string $checkKey, bool $removeFallback = false): bool
+    public function removeCheckData(string $checkKey, bool $removeFallback = true): bool
     {
-        $result = false;
         $identifier = self::OD_CACHE_PREFIX . '_' . $checkKey;
-        $fallbackIdentifier = self::OD_CACHE_PREFIX . '_fallback_' . $checkKey;
 
-        if (($cachedData = $this->cache->load($identifier)) && !$removeFallback) {
-            $this->cache->save($cachedData, $fallbackIdentifier);
-        }
-
-        if ($removeFallback) {
-            $this->cache->remove($fallbackIdentifier);
+        if (
+            ($cacheRecord = $this->cache->load($identifier))
+            && ($cachedData = $this->serializer->unserialize($cacheRecord))
+            && isset($cachedData['fallback_data'])
+            && !$removeFallback
+        ) {
+            return $this->cache->save(
+                $this->serializer->serialize($cachedData['fallback_data']),
+                $identifier
+            );
         }
 
         return $this->cache->remove($identifier);
     }
 
-    public function saveCheckData(string $checkKey, string $status, string $data): bool
-    {
+    public function saveCheckData(
+        string $checkKey,
+        string $status,
+        string|array $data,
+        bool $persistFallback = false
+    ): bool {
         $identifier = self::OD_CACHE_PREFIX . '_' . $checkKey;
-        $fallbackRecordIdentifier = self::OD_CACHE_PREFIX . '_fallback_' . $checkKey;
 
-        if ($currentData = $this->cache->load($identifier)) {
-            $this->cache->save($currentData, $fallbackRecordIdentifier);
+        $payload = [
+            "status" => $status,
+            "data" => $data,
+        ];
+
+        try {
+            if (
+                ($currentData = $this->cache->load($identifier))
+                && $currentData = $this->serializer->unserialize($currentData)
+            ) {
+                $payload['fallback_data'] = $currentData;
+            }
+
+            if (
+                isset($currentData['fallback_data'])
+                && $persistFallback
+            ) {
+                $payload['fallback_data'] = $currentData['fallback_data'];
+            }
+
+            unset($payload['fallback_data']['fallback_data']);
+        } catch (\Exception $exception) {
+            unset($payload['fallback_data']);
         }
-        return $this->cache->save($status . self::DATA_SEPARATOR . $data, $identifier);
-    }
 
-    public function updateCheckData(string $checkKey, string $status, string $data): bool
-    {
-        return $this->saveCheckData($checkKey, $status, $data);
+        return $this->cache->save($this->serializer->serialize($payload), $identifier);
     }
 }

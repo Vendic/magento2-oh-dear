@@ -7,6 +7,7 @@ namespace Vendic\OhDear\Test\Integration\Checks;
 
 use Magento\Framework\App\CacheInterface;
 use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Serialize\Serializer\Json;
 use Magento\TestFramework\Helper\Bootstrap;
 use Magento\TestFramework\ObjectManager;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -22,6 +23,8 @@ use Vendic\OhDear\Utils\Shell as ShellUtils;
  */
 class PhpFpmCountTest extends TestCase
 {
+    private const CURR_TIME = 1753797380;
+
     public function testCheckIsSkippedOnMacOS(): void
     {
         /** @var ShellUtils & MockObject $shellUtilsMock */
@@ -89,7 +92,7 @@ class PhpFpmCountTest extends TestCase
 
         /** @var CacheService & MockObject $shellUtilsMock */
         $cacheServiceMock = $this->getMockBuilder(CacheService::class)
-            ->setConstructorArgs([$objectManager->get(CacheInterface::class)])
+            ->setConstructorArgs([$objectManager->get(CacheInterface::class), $objectManager->get(Json::class)])
             ->onlyMethods(['getDataForCheck'])
             ->getMock();
 
@@ -97,9 +100,10 @@ class PhpFpmCountTest extends TestCase
 
         $statusResolverMock = $this->getMockBuilder(CachedStatusResolver::class)
             ->setConstructorArgs([$cacheServiceMock])
-            ->onlyMethods(['getMessagesByStatus'])
+            ->onlyMethods(['getMessagesByStatus', 'getTime'])
             ->getMock();
 
+        $statusResolverMock->method('getTime')->willReturn(self::CURR_TIME);
         $statusResolverMock->method('getMessagesByStatus')->willReturn([
             CachedStatusResolver::STATUS_OK => [
                 'summary' => CachedStatusResolver::STATUS_OK,
@@ -139,7 +143,7 @@ class PhpFpmCountTest extends TestCase
                 [
                     'status' => CheckStatus::STATUS_FAILED->value,
                     'fallback_status' => CheckStatus::STATUS_OK->value,
-                    'data' => time()
+                    'data' => self::CURR_TIME
                 ],
                 CheckStatus::STATUS_OK,
                 CachedStatusResolver::STATUS_OK
@@ -149,7 +153,7 @@ class PhpFpmCountTest extends TestCase
                 [
                     'status' => CheckStatus::STATUS_FAILED->value,
                     'fallback_status' => CheckStatus::STATUS_OK->value,
-                    'data' => time()
+                    'data' => self::CURR_TIME
                 ],
                 CheckStatus::STATUS_WARNING,
                 CachedStatusResolver::STATUS_CHANGE
@@ -159,7 +163,7 @@ class PhpFpmCountTest extends TestCase
                 [
                     'status' => CheckStatus::STATUS_FAILED->value,
                     'fallback_status' => CheckStatus::STATUS_OK->value,
-                    'data' => time()
+                    'data' => self::CURR_TIME
                 ],
                 CheckStatus::STATUS_OK,
                 CachedStatusResolver::STATUS_IN_THRESHOLD
@@ -169,7 +173,7 @@ class PhpFpmCountTest extends TestCase
                 [
                     'status' => CheckStatus::STATUS_FAILED->value,
                     'fallback_status' => CheckStatus::STATUS_WARNING->value,
-                    'data' => time()
+                    'data' => self::CURR_TIME
                 ],
                 CheckStatus::STATUS_WARNING,
                 CachedStatusResolver::STATUS_IN_THRESHOLD
@@ -179,7 +183,7 @@ class PhpFpmCountTest extends TestCase
                 [
                     'status' => CheckStatus::STATUS_FAILED->value,
                     'fallback_status' => CheckStatus::STATUS_OK->value,
-                    'data' => (string)(time() - (1 * 24 * 3600))
+                    'data' => (string)(self::CURR_TIME - (1 * 24 * 3600))
                 ],
                 CheckStatus::STATUS_FAILED,
                 CachedStatusResolver::STATUS_FAIL
