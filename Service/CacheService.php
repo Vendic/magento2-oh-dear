@@ -95,7 +95,7 @@ class CacheService
 
             unset($payload['fallback_data']['fallback_data']);
         } catch (\Exception $exception) {
-            unset($payload['fallback_data']);
+            // Literally do nothing, that simply means fallback data cannot be extracted
         }
 
         return $this->cache->save($this->serializer->serialize($payload), $identifier);
