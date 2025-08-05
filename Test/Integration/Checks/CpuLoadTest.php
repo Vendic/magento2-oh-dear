@@ -42,7 +42,11 @@ class CpuLoadTest extends TestCase
         $objectManager->addSharedInstance($cpuLoadUtilsMock, CpuLoadUtils::class);
 
         /** @var CpuLoad $cpuLoadCheck */
-        $cpuLoadCheck = $objectManager->get(CpuLoad::class);
+        $cpuLoadCheck = $objectManager->create(CpuLoad::class, [
+            'maxLoadLastMinute' => 18.0,
+            'maxLoadLastFiveMinutes' => 15.0,
+            'maxLoadLastFifteenMinutes' => 12.0
+        ]);
         $checkResult = $cpuLoadCheck->run();
 
         $this->assertEquals('cpu_load', $checkResult->getName());
@@ -76,7 +80,11 @@ class CpuLoadTest extends TestCase
         $objectManager->addSharedInstance($cpuLoadUtilsMock, CpuLoadUtils::class);
 
         /** @var CpuLoad $cpuLoadCheck */
-        $cpuLoadCheck = $objectManager->get(CpuLoad::class);
+        $cpuLoadCheck = $objectManager->create(CpuLoad::class, [
+            'maxLoadLastMinute' => 18.0,
+            'maxLoadLastFiveMinutes' => 15.0,
+            'maxLoadLastFifteenMinutes' => 12.0
+        ]);
         $checkResult = $cpuLoadCheck->run();
 
         $this->assertEquals('cpu_load', $checkResult->getName());

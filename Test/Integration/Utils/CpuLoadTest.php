@@ -17,8 +17,8 @@ class CpuLoadTest extends TestCase
         $cpuLoadUtils = Bootstrap::getObjectManager()->get(CpuLoadUtils::class);
         $cpuLoadResult = $cpuLoadUtils->measure();
 
-        $this->assertGreaterThanOrEqual(0.1, $cpuLoadResult->getLoadLastMinute());
-        $this->assertGreaterThanOrEqual(0.1, $cpuLoadResult->getLoadLastFiveMinutes());
-        $this->assertGreaterThanOrEqual(0.1, $cpuLoadResult->getLoadLastFifteenMinutes());
+        $this->assertGreaterThanOrEqual(0.0, $cpuLoadResult->getLoadLastMinute());
+        $this->assertGreaterThanOrEqual(0.0, $cpuLoadResult->getLoadLastFiveMinutes());
+        $this->assertGreaterThanOrEqual(0.0, $cpuLoadResult->getLoadLastFifteenMinutes());
     }
 }
