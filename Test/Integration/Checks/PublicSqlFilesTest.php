@@ -11,6 +11,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Vendic\OhDear\Api\Data\CheckStatus;
 use Vendic\OhDear\Checks\PublicSqlFiles;
+use Vendic\OhDear\Model\CheckResultFactory;
 use Vendic\OhDear\Utils\Shell as ShellUtils;
 
 class PublicSqlFilesTest extends TestCase
@@ -30,6 +31,11 @@ class PublicSqlFilesTest extends TestCase
 
         /** @var \Magento\TestFramework\ObjectManager $objectManager */
         $objectManager = Bootstrap::getObjectManager();
+        
+        // Clear the ObjectManager cache to ensure fresh instances
+        $objectManager->clearCache();
+        
+        // Add the mock as a shared instance
         $objectManager->addSharedInstance($shellMock, ShellUtils::class);
 
         /** @var PublicSqlFiles $publicSqlFilesCheck */
@@ -40,7 +46,7 @@ class PublicSqlFilesTest extends TestCase
         $this->assertEquals('public_sql_files', $checkResult->getName());
     }
 
-    public function dataProvider(): array
+    public static function dataProvider(): array
     {
         return [
             [

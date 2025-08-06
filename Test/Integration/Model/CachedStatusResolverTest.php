@@ -49,6 +49,9 @@ class CachedStatusResolverTest extends TestCase
 
         $statusResolver->expects($this->any())->method('getTime')->willReturn(self::CURR_TIME);
 
+        // Clear the ObjectManager cache to ensure fresh instances
+        $objectManager->clearCache();
+        
         $objectManager->addSharedInstance($statusResolver, CachedStatusResolver::class);
 
         parent::setUp();
@@ -208,7 +211,7 @@ class CachedStatusResolverTest extends TestCase
         $this->assertEquals($referenceCacheTime, $cachedValue['data']);
     }
 
-    public function statusFlappingDataProvider()
+    public static function statusFlappingDataProvider()
     {
         return [
             [
@@ -229,7 +232,7 @@ class CachedStatusResolverTest extends TestCase
         ];
     }
 
-    public function failStatusesDataProvider()
+    public static function failStatusesDataProvider()
     {
         return [
             [CheckStatus::STATUS_FAILED],

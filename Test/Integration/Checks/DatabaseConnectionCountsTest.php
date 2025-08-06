@@ -57,6 +57,9 @@ class DatabaseConnectionCountsTest extends TestCase
             ->getMock();
         $dbUtilsMock->method('getConnectionCount')->willReturn($dbConnections);
 
+        // Clear the ObjectManager cache to ensure fresh instances
+        $objectManager->clearCache();
+        
         $objectManager->addSharedInstance($dbUtilsMock, DbUtils::class);
 
         $this->setupCache($objectManager, $cachedData);
@@ -110,11 +113,14 @@ class DatabaseConnectionCountsTest extends TestCase
         ]);
         $statusResolverMock->method('getTime')->willReturn(self::CURR_TIME);
 
+        // Clear the ObjectManager cache to ensure fresh instances
+        $objectManager->clearCache();
+        
         $objectManager->addSharedInstance($cacheServiceMock, CacheService::class);
         $objectManager->addSharedInstance($statusResolverMock, CachedStatusResolver::class);
     }
 
-    public function databaseConnectionCountDataProvider(): array
+    public static function databaseConnectionCountDataProvider(): array
     {
         return [
             [

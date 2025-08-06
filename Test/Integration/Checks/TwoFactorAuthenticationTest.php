@@ -52,6 +52,10 @@ class TwoFactorAuthenticationTest extends TestCase
     ): void {
         // Mock the module list to always return true for TFA module
         $moduleListMock = $this->getModuleListMock(true);
+        
+        // Clear the ObjectManager cache to ensure fresh instances
+        $this->objectManager->clearCache();
+        
         $this->objectManager->addSharedInstance($moduleListMock, ModuleListInterface::class);
 
         // Set up config value using TddWizard fixture
@@ -66,7 +70,7 @@ class TwoFactorAuthenticationTest extends TestCase
         $this->assertEquals($expectedShortSummary, $checkResult->getShortSummary());
     }
 
-    public function twoFactorAuthConfigDataProvider(): array
+    public static function twoFactorAuthConfigDataProvider(): array
     {
         return [
             [
@@ -89,6 +93,10 @@ class TwoFactorAuthenticationTest extends TestCase
     {
         // Mock the module list to return false for TFA module
         $moduleListMock = $this->getModuleListMock(false);
+        
+        // Clear the ObjectManager cache to ensure fresh instances
+        $this->objectManager->clearCache();
+        
         $this->objectManager->addSharedInstance($moduleListMock, ModuleList::class);
 
         // Config value doesn't matter for this test, but set it anyway

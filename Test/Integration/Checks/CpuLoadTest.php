@@ -39,6 +39,9 @@ class CpuLoadTest extends TestCase
             $loadLastFifteenMinutes
         );
 
+        // Clear the ObjectManager cache to ensure fresh instances
+        $objectManager->clearCache();
+        
         $objectManager->addSharedInstance($cpuLoadUtilsMock, CpuLoadUtils::class);
 
         /** @var CpuLoad $cpuLoadCheck */
@@ -49,7 +52,7 @@ class CpuLoadTest extends TestCase
         $this->assertEquals($expectedStatus, $checkResult->getStatus(), $message);
     }
 
-    public function cpuLoadDataProvider(): array
+    public static function cpuLoadDataProvider(): array
     {
         return [
             [1, 1, 1, CheckStatus::STATUS_OK, 'All loads are below 1: OK'],
@@ -73,6 +76,9 @@ class CpuLoadTest extends TestCase
         $cpuLoadUtilsMock->method('measure')
             ->willThrowException(new LocalizedException(__('Cannot get CPU load')));
 
+        // Clear the ObjectManager cache to ensure fresh instances
+        $objectManager->clearCache();
+        
         $objectManager->addSharedInstance($cpuLoadUtilsMock, CpuLoadUtils::class);
 
         /** @var CpuLoad $cpuLoadCheck */

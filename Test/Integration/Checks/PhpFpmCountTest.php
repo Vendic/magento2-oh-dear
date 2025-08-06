@@ -36,6 +36,10 @@ class PhpFpmCountTest extends TestCase
 
         /** @var ObjectManager $objectManager */
         $objectManager = Bootstrap::getObjectManager();
+        
+        // Clear the ObjectManager cache to ensure fresh instances
+        $objectManager->clearCache();
+        
         $objectManager->addSharedInstance($shellUtilsMock, ShellUtils::class);
 
         /** @var PhpFpmCount $phpFpmCheck */
@@ -60,6 +64,10 @@ class PhpFpmCountTest extends TestCase
 
         /** @var ObjectManager $objectManager */
         $objectManager = Bootstrap::getObjectManager();
+        
+        // Clear the ObjectManager cache to ensure fresh instances
+        $objectManager->clearCache();
+        
         $objectManager->addSharedInstance($shellUtilsMock, ShellUtils::class);
 
         /** @var PhpFpmCount $phpFpmCheck */
@@ -122,6 +130,9 @@ class PhpFpmCountTest extends TestCase
             ],
         ]);
 
+        // Clear the ObjectManager cache to ensure fresh instances
+        $objectManager->clearCache();
+        
         $objectManager->addSharedInstance($shellUtilsMock, ShellUtils::class);
         $objectManager->addSharedInstance($cacheServiceMock, CacheService::class);
         $objectManager->addSharedInstance($statusResolverMock, CachedStatusResolver::class);
@@ -135,7 +146,7 @@ class PhpFpmCountTest extends TestCase
         $this->assertEquals($expectedMessage, $checkResult->getShortSummary());
     }
 
-    public function phpFpmCountDataProvider(): array
+    public static function phpFpmCountDataProvider(): array
     {
         return [
             [
