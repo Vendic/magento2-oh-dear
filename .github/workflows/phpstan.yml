@@ -7,7 +7,9 @@ jobs:
       matrix:
         include:
           - PHP_VERSION: php83-fpm
-            MAGENTO_VERSION: 2.4.7
+            MAGENTO_VERSION: 2.4.7-p6
+          - PHP_VERSION: php83-fpm
+            MAGENTO_VERSION: 2.4.8-p1
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

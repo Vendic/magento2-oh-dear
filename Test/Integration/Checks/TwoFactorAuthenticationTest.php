@@ -52,13 +52,14 @@ class TwoFactorAuthenticationTest extends TestCase
     ): void {
         // Mock the module list to always return true for TFA module
         $moduleListMock = $this->getModuleListMock(true);
-        $this->objectManager->addSharedInstance($moduleListMock, ModuleListInterface::class);
+        
+        $this->objectManager->addSharedInstance($moduleListMock, ModuleListInterface::class, true);
 
         // Set up config value using TddWizard fixture
         ConfigFixture::setGlobal('twofactorauth/general/enable', $configValue);
 
         /** @var TwoFactorAuthentication $twoFactorAuthCheck */
-        $twoFactorAuthCheck = $this->objectManager->get(TwoFactorAuthentication::class);
+        $twoFactorAuthCheck = $this->objectManager->create(TwoFactorAuthentication::class);
         $checkResult = $twoFactorAuthCheck->run();
 
         $this->assertEquals('two_factor_authentication', $checkResult->getName());
@@ -66,7 +67,7 @@ class TwoFactorAuthenticationTest extends TestCase
         $this->assertEquals($expectedShortSummary, $checkResult->getShortSummary());
     }
 
-    public function twoFactorAuthConfigDataProvider(): array
+    public static function twoFactorAuthConfigDataProvider(): array
     {
         return [
             [
@@ -89,13 +90,14 @@ class TwoFactorAuthenticationTest extends TestCase
     {
         // Mock the module list to return false for TFA module
         $moduleListMock = $this->getModuleListMock(false);
-        $this->objectManager->addSharedInstance($moduleListMock, ModuleList::class);
+        
+        $this->objectManager->addSharedInstance($moduleListMock, ModuleListInterface::class, true);
 
         // Config value doesn't matter for this test, but set it anyway
         ConfigFixture::setGlobal('twofactorauth/general/enable', '1');
 
         /** @var TwoFactorAuthentication $twoFactorAuthCheck */
-        $twoFactorAuthCheck = $this->objectManager->get(TwoFactorAuthentication::class);
+        $twoFactorAuthCheck = $this->objectManager->create(TwoFactorAuthentication::class);
         $checkResult = $twoFactorAuthCheck->run();
 
         $this->assertEquals('two_factor_authentication', $checkResult->getName());

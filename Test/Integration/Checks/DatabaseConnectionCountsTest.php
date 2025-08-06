@@ -6,6 +6,7 @@
 namespace Vendic\OhDear\Test\Integration\Checks;
 
 use Magento\Framework\App\CacheInterface;
+use Magento\Framework\Serialize\Serializer\Json;
 use Magento\TestFramework\Helper\Bootstrap;
 use Magento\TestFramework\ObjectManager;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -22,12 +23,14 @@ use Vendic\OhDear\Utils\Database as DbUtils;
  */
 class DatabaseConnectionCountsTest extends TestCase
 {
+    private const CURR_TIME = 1753797380;
+
     public function testDatabaseConnectionCountOk(): void
     {
         $this->setupCache(Bootstrap::getObjectManager());
 
         /** @var DatabaseConnectionCount $databaseConnectionCheck */
-        $databaseConnectionCheck = Bootstrap::getObjectManager()->get(DatabaseConnectionCount::class);
+        $databaseConnectionCheck = Bootstrap::getObjectManager()->create(DatabaseConnectionCount::class);
 
         $checkResult = $databaseConnectionCheck->run();
         $this->assertEquals('db_connection_count', $checkResult->getName());
@@ -54,12 +57,12 @@ class DatabaseConnectionCountsTest extends TestCase
             ->getMock();
         $dbUtilsMock->method('getConnectionCount')->willReturn($dbConnections);
 
-        $objectManager->addSharedInstance($dbUtilsMock, DbUtils::class);
+        $objectManager->addSharedInstance($dbUtilsMock, DbUtils::class, true);
 
         $this->setupCache($objectManager, $cachedData);
 
         /** @var DatabaseConnectionCount $databaseConnectionCheck */
-        $databaseConnectionCheck = Bootstrap::getObjectManager()->get(DatabaseConnectionCount::class);
+        $databaseConnectionCheck = Bootstrap::getObjectManager()->create(DatabaseConnectionCount::class);
 
         $checkResult = $databaseConnectionCheck->run();
         $this->assertEquals('db_connection_count', $checkResult->getName());
@@ -77,7 +80,7 @@ class DatabaseConnectionCountsTest extends TestCase
     {
         /** @var CacheService & MockObject $shellUtilsMock */
         $cacheServiceMock = $this->getMockBuilder(CacheService::class)
-            ->setConstructorArgs([$objectManager->get(CacheInterface::class)])
+            ->setConstructorArgs([$objectManager->get(CacheInterface::class), $objectManager->get(Json::class)])
             ->onlyMethods(['getDataForCheck'])
             ->getMock();
 
@@ -85,7 +88,7 @@ class DatabaseConnectionCountsTest extends TestCase
 
         $statusResolverMock = $this->getMockBuilder(CachedStatusResolver::class)
             ->setConstructorArgs([$cacheServiceMock])
-            ->onlyMethods(['getMessagesByStatus'])
+            ->onlyMethods(['getMessagesByStatus', 'getTime'])
             ->getMock();
 
         $statusResolverMock->method('getMessagesByStatus')->willReturn([
@@ -105,12 +108,13 @@ class DatabaseConnectionCountsTest extends TestCase
                 'notification_message' => CachedStatusResolver::STATUS_FAIL,
             ],
         ]);
+        $statusResolverMock->method('getTime')->willReturn(self::CURR_TIME);
 
-        $objectManager->addSharedInstance($cacheServiceMock, CacheService::class);
-        $objectManager->addSharedInstance($statusResolverMock, CachedStatusResolver::class);
+        $objectManager->addSharedInstance($cacheServiceMock, CacheService::class, true);
+        $objectManager->addSharedInstance($statusResolverMock, CachedStatusResolver::class, true);
     }
 
-    public function databaseConnectionCountDataProvider(): array
+    public static function databaseConnectionCountDataProvider(): array
     {
         return [
             [
@@ -118,7 +122,7 @@ class DatabaseConnectionCountsTest extends TestCase
                 [
                     'status' => CheckStatus::STATUS_FAILED->value,
                     'fallback_status' => CheckStatus::STATUS_OK->value,
-                    'data' => time()
+                    'data' => (string)self::CURR_TIME
                 ],
                 CheckStatus::STATUS_OK,
                 CachedStatusResolver::STATUS_OK
@@ -128,7 +132,7 @@ class DatabaseConnectionCountsTest extends TestCase
                 [
                     'status' => CheckStatus::STATUS_FAILED->value,
                     'fallback_status' => CheckStatus::STATUS_OK->value,
-                    'data' => time()
+                    'data' => (string)self::CURR_TIME
                 ],
                 CheckStatus::STATUS_WARNING,
                 CachedStatusResolver::STATUS_CHANGE
@@ -138,7 +142,7 @@ class DatabaseConnectionCountsTest extends TestCase
                 [
                     'status' => CheckStatus::STATUS_FAILED->value,
                     'fallback_status' => CheckStatus::STATUS_OK->value,
-                    'data' => time()
+                    'data' => (string)self::CURR_TIME
                 ],
                 CheckStatus::STATUS_OK,
                 CachedStatusResolver::STATUS_IN_THRESHOLD
@@ -148,7 +152,7 @@ class DatabaseConnectionCountsTest extends TestCase
                 [
                     'status' => CheckStatus::STATUS_FAILED->value,
                     'fallback_status' => CheckStatus::STATUS_WARNING->value,
-                    'data' => time()
+                    'data' => (string)self::CURR_TIME
                 ],
                 CheckStatus::STATUS_WARNING,
                 CachedStatusResolver::STATUS_IN_THRESHOLD
@@ -158,7 +162,7 @@ class DatabaseConnectionCountsTest extends TestCase
                 [
                     'status' => CheckStatus::STATUS_FAILED->value,
                     'fallback_status' => CheckStatus::STATUS_OK->value,
-                    'data' => (string)(time() - (24 * 3600))
+                    'data' => (string)(self::CURR_TIME - (24 * 3600))
                 ],
                 CheckStatus::STATUS_FAILED,
                 CachedStatusResolver::STATUS_FAIL

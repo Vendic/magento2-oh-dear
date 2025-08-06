@@ -7,6 +7,7 @@ namespace Vendic\OhDear\Test\Integration\Checks;
 
 use Magento\Framework\App\CacheInterface;
 use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Serialize\Serializer\Json;
 use Magento\TestFramework\Helper\Bootstrap;
 use Magento\TestFramework\ObjectManager;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -22,21 +23,21 @@ use Vendic\OhDear\Utils\Shell as ShellUtils;
  */
 class PhpFpmCountTest extends TestCase
 {
+    private const CURR_TIME = 1753797380;
+
     public function testCheckIsSkippedOnMacOS(): void
     {
-        /** @var ShellUtils & MockObject $shellUtilsMock */
-        $shellUtilsMock = $this->getMockBuilder(ShellUtils::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['isMacOS'])
-            ->getMock();
-        $shellUtilsMock->method('isMacOS')->willReturn(true);
-
         /** @var ObjectManager $objectManager */
         $objectManager = Bootstrap::getObjectManager();
-        $objectManager->addSharedInstance($shellUtilsMock, ShellUtils::class);
+        
+        /** @var ShellUtils & MockObject $shellUtilsMock */
+        $shellUtilsMock = $this->createMock(ShellUtils::class);
+        $shellUtilsMock->method('isMacOS')->willReturn(true);
+        
+        $objectManager->addSharedInstance($shellUtilsMock, ShellUtils::class, true);
 
         /** @var PhpFpmCount $phpFpmCheck */
-        $phpFpmCheck = $objectManager->get(PhpFpmCount::class);
+        $phpFpmCheck = $objectManager->create(PhpFpmCount::class);
         $checkResult = $phpFpmCheck->run();
 
         $this->assertEquals('php_fpm_count', $checkResult->getName());
@@ -45,61 +46,117 @@ class PhpFpmCountTest extends TestCase
 
     public function testCheckCrashed() : void
     {
+        /** @var ObjectManager $objectManager */
+        $objectManager = Bootstrap::getObjectManager();
+
         /** @var ShellUtils & MockObject $shellUtilsMock */
-        $shellUtilsMock = $this->getMockBuilder(ShellUtils::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['getPhpFpmProcessCount', 'isMacOS'])
-            ->getMock();
+        $shellUtilsMock = $this->createMock(ShellUtils::class);
 
         $shellUtilsMock->method('isMacOS')->willReturn(false);
         $shellUtilsMock->method('getPhpFpmProcessCount')
             ->willThrowException(new \Exception('Could not get PHP-FPM process count'));
-
-        /** @var ObjectManager $objectManager */
-        $objectManager = Bootstrap::getObjectManager();
-        $objectManager->addSharedInstance($shellUtilsMock, ShellUtils::class);
+        
+        $objectManager->addSharedInstance($shellUtilsMock, ShellUtils::class, true);
 
         /** @var PhpFpmCount $phpFpmCheck */
-        $phpFpmCheck = $objectManager->get(PhpFpmCount::class);
+        $phpFpmCheck = $objectManager->create(PhpFpmCount::class);
         $checkResult = $phpFpmCheck->run();
 
         $this->assertEquals('php_fpm_count', $checkResult->getName());
         $this->assertEquals(CheckStatus::STATUS_CRASHED, $checkResult->getStatus());
     }
 
-    /**
-     * @dataProvider phpFpmCountDataProvider
-     */
-    public function testCheck(
-        int $phpFpmCount,
-        array $cachedData,
-        CheckStatus $expectedStatus,
-        string $expectedMessage
-    ): void {
+    public function testCheck(): void
+    {
         /** @var ObjectManager $objectManager */
         $objectManager = Bootstrap::getObjectManager();
 
-        /** @var ShellUtils & MockObject $shellUtilsMock */
-        $shellUtilsMock = $this->getMockBuilder(ShellUtils::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['isMacOS', 'getPhpFpmProcessCount'])
-            ->getMock();
-        $shellUtilsMock->method('isMacOS')->willReturn(false);
-        $shellUtilsMock->method('getPhpFpmProcessCount')->willReturn($phpFpmCount);
+        // Test cases for consecutive calls
+        $testCases = [
+            [
+                'phpFpmCount' => 1,
+                'cachedData' => [
+                    'status' => CheckStatus::STATUS_FAILED->value,
+                    'fallback_status' => CheckStatus::STATUS_OK->value,
+                    'data' => self::CURR_TIME
+                ],
+                'expectedStatus' => CheckStatus::STATUS_OK,
+                'expectedMessage' => CachedStatusResolver::STATUS_OK
+            ],
+            [
+                'phpFpmCount' => 61,
+                'cachedData' => [
+                    'status' => CheckStatus::STATUS_FAILED->value,
+                    'fallback_status' => CheckStatus::STATUS_OK->value,
+                    'data' => self::CURR_TIME
+                ],
+                'expectedStatus' => CheckStatus::STATUS_WARNING,
+                'expectedMessage' => CachedStatusResolver::STATUS_CHANGE
+            ],
+            [
+                'phpFpmCount' => 76,
+                'cachedData' => [
+                    'status' => CheckStatus::STATUS_FAILED->value,
+                    'fallback_status' => CheckStatus::STATUS_OK->value,
+                    'data' => self::CURR_TIME
+                ],
+                'expectedStatus' => CheckStatus::STATUS_OK,
+                'expectedMessage' => CachedStatusResolver::STATUS_IN_THRESHOLD
+            ],
+            [
+                'phpFpmCount' => 76,
+                'cachedData' => [
+                    'status' => CheckStatus::STATUS_FAILED->value,
+                    'fallback_status' => CheckStatus::STATUS_WARNING->value,
+                    'data' => self::CURR_TIME
+                ],
+                'expectedStatus' => CheckStatus::STATUS_WARNING,
+                'expectedMessage' => CachedStatusResolver::STATUS_IN_THRESHOLD
+            ],
+            [
+                'phpFpmCount' => 76,
+                'cachedData' => [
+                    'status' => CheckStatus::STATUS_FAILED->value,
+                    'fallback_status' => CheckStatus::STATUS_OK->value,
+                    'data' => (string)(self::CURR_TIME - (1 * 24 * 3600))
+                ],
+                'expectedStatus' => CheckStatus::STATUS_FAILED,
+                'expectedMessage' => CachedStatusResolver::STATUS_FAIL
+            ],
+        ];
 
-        /** @var CacheService & MockObject $shellUtilsMock */
+        // Create ONE ShellUtils mock with consecutive return values
+        // Note: getPhpFpmProcessCount() is called twice per test case (once for logic, once for meta)
+        /** @var ShellUtils & MockObject $shellUtilsMock */
+        $shellUtilsMock = $this->createMock(ShellUtils::class);
+        $shellUtilsMock->method('isMacOS')->willReturn(false);
+        
+        $phpFpmCounts = array_column($testCases, 'phpFpmCount');
+        $doublePhpFpmCounts = [];
+        foreach ($phpFpmCounts as $count) {
+            $doublePhpFpmCounts[] = $count; // First call for logic
+            $doublePhpFpmCounts[] = $count; // Second call for meta
+        }
+        
+        $shellUtilsMock->method('getPhpFpmProcessCount')
+            ->willReturnOnConsecutiveCalls(...$doublePhpFpmCounts);
+
+        // Create ONE CacheService mock with consecutive cached data
+        /** @var CacheService & MockObject $cacheServiceMock */
         $cacheServiceMock = $this->getMockBuilder(CacheService::class)
-            ->setConstructorArgs([$objectManager->get(CacheInterface::class)])
+            ->setConstructorArgs([$objectManager->get(CacheInterface::class), $objectManager->get(Json::class)])
             ->onlyMethods(['getDataForCheck'])
             ->getMock();
+        $cacheServiceMock->method('getDataForCheck')
+            ->willReturnOnConsecutiveCalls(...array_column($testCases, 'cachedData'));
 
-        $cacheServiceMock->method('getDataForCheck')->willReturn($cachedData);
-
+        // Create ONE CachedStatusResolver mock
+        /** @var CachedStatusResolver & MockObject $statusResolverMock */
         $statusResolverMock = $this->getMockBuilder(CachedStatusResolver::class)
             ->setConstructorArgs([$cacheServiceMock])
-            ->onlyMethods(['getMessagesByStatus'])
+            ->onlyMethods(['getTime', 'getMessagesByStatus'])
             ->getMock();
-
+        $statusResolverMock->method('getTime')->willReturn(self::CURR_TIME);
         $statusResolverMock->method('getMessagesByStatus')->willReturn([
             CachedStatusResolver::STATUS_OK => [
                 'summary' => CachedStatusResolver::STATUS_OK,
@@ -118,72 +175,20 @@ class PhpFpmCountTest extends TestCase
             ],
         ]);
 
-        $objectManager->addSharedInstance($shellUtilsMock, ShellUtils::class);
-        $objectManager->addSharedInstance($cacheServiceMock, CacheService::class);
-        $objectManager->addSharedInstance($statusResolverMock, CachedStatusResolver::class);
+        // Set up shared instances ONCE
+        $objectManager->addSharedInstance($shellUtilsMock, ShellUtils::class, true);
+        $objectManager->addSharedInstance($cacheServiceMock, CacheService::class, true);
+        $objectManager->addSharedInstance($statusResolverMock, CachedStatusResolver::class, true);
 
-        /** @var PhpFpmCount $phpFpmCheck */
-        $phpFpmCheck = $objectManager->get(PhpFpmCount::class);
-        $checkResult = $phpFpmCheck->run();
+        // Run each test case - the mocks will return consecutive values
+        foreach ($testCases as $index => $testCase) {
+            /** @var PhpFpmCount $phpFpmCheck */
+            $phpFpmCheck = $objectManager->create(PhpFpmCount::class);
+            $checkResult = $phpFpmCheck->run();
 
-        $this->assertEquals('php_fpm_count', $checkResult->getName());
-        $this->assertEquals($expectedStatus, $checkResult->getStatus());
-        $this->assertEquals($expectedMessage, $checkResult->getShortSummary());
-    }
-
-    public function phpFpmCountDataProvider(): array
-    {
-        return [
-            [
-                1,
-                [
-                    'status' => CheckStatus::STATUS_FAILED->value,
-                    'fallback_status' => CheckStatus::STATUS_OK->value,
-                    'data' => time()
-                ],
-                CheckStatus::STATUS_OK,
-                CachedStatusResolver::STATUS_OK
-            ],
-            [
-                61,
-                [
-                    'status' => CheckStatus::STATUS_FAILED->value,
-                    'fallback_status' => CheckStatus::STATUS_OK->value,
-                    'data' => time()
-                ],
-                CheckStatus::STATUS_WARNING,
-                CachedStatusResolver::STATUS_CHANGE
-            ],
-            [
-                76,
-                [
-                    'status' => CheckStatus::STATUS_FAILED->value,
-                    'fallback_status' => CheckStatus::STATUS_OK->value,
-                    'data' => time()
-                ],
-                CheckStatus::STATUS_OK,
-                CachedStatusResolver::STATUS_IN_THRESHOLD
-            ],
-            [
-                76,
-                [
-                    'status' => CheckStatus::STATUS_FAILED->value,
-                    'fallback_status' => CheckStatus::STATUS_WARNING->value,
-                    'data' => time()
-                ],
-                CheckStatus::STATUS_WARNING,
-                CachedStatusResolver::STATUS_IN_THRESHOLD
-            ],
-            [
-                76,
-                [
-                    'status' => CheckStatus::STATUS_FAILED->value,
-                    'fallback_status' => CheckStatus::STATUS_OK->value,
-                    'data' => (string)(time() - (1 * 24 * 3600))
-                ],
-                CheckStatus::STATUS_FAILED,
-                CachedStatusResolver::STATUS_FAIL
-            ],
-        ];
+            $this->assertEquals('php_fpm_count', $checkResult->getName(), "Test case {$index}");
+            $this->assertEquals($testCase['expectedStatus'], $checkResult->getStatus(), "Test case {$index}");
+            $this->assertEquals($testCase['expectedMessage'], $checkResult->getShortSummary(), "Test case {$index}");
+        }
     }
 }
