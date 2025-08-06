@@ -32,9 +32,6 @@ class PublicSqlFilesTest extends TestCase
         /** @var \Magento\TestFramework\ObjectManager $objectManager */
         $objectManager = Bootstrap::getObjectManager();
         
-        // Clear the ObjectManager cache to ensure fresh instances
-        $objectManager->clearCache();
-        
         // Add the mock as a shared instance
         $objectManager->addSharedInstance($shellMock, ShellUtils::class);
 

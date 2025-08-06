@@ -21,46 +21,67 @@ use Vendic\OhDear\Utils\CpuLoad\CpuLoadResults;
 class CpuLoadTest extends TestCase
 {
 
-    /**
-     * @dataProvider cpuLoadDataProvider
-     */
-    public function testCpuLoadsAndCheckStatus(
-        float $loadLastMinute,
-        float $loadLastFiveMinutes,
-        float $loadLastFifteenMinutes,
-        CheckStatus $expectedStatus,
-        string $message = ''
-    ): void {
+    public function testCpuLoadsAndCheckStatus(): void
+    {
         /** @var ObjectManager $objectManager */
         $objectManager = Bootstrap::getObjectManager();
-        $cpuLoadUtilsMock = $this->getCpuLoadUtilsMock(
-            $loadLastMinute,
-            $loadLastFiveMinutes,
-            $loadLastFifteenMinutes
-        );
-
-        // Clear the ObjectManager cache to ensure fresh instances
-        $objectManager->clearCache();
         
-        $objectManager->addSharedInstance($cpuLoadUtilsMock, CpuLoadUtils::class);
-
-        /** @var CpuLoad $cpuLoadCheck */
-        $cpuLoadCheck = $objectManager->get(CpuLoad::class);
-        $checkResult = $cpuLoadCheck->run();
-
-        $this->assertEquals('cpu_load', $checkResult->getName());
-        $this->assertEquals($expectedStatus, $checkResult->getStatus(), $message);
-    }
-
-    public static function cpuLoadDataProvider(): array
-    {
-        return [
-            [1, 1, 1, CheckStatus::STATUS_OK, 'All loads are below 1: OK'],
-            [20, 1, 1, CheckStatus::STATUS_WARNING, 'Load last minute is 20: warning '],
-            [1, 20, 1, CheckStatus::STATUS_WARNING, 'Load last five minutes is 20: warning'],
-            [1, 1, 20, CheckStatus::STATUS_WARNING, 'Load last fifteen minutes is 20: warning'],
-            [20, 20, 20, CheckStatus::STATUS_WARNING, 'All loads are above 20: warning'],
+        // Test data for consecutive calls
+        $testCases = [
+            ['loads' => [1, 1, 1], 'expectedStatus' => CheckStatus::STATUS_OK, 'message' => 'All loads are below 1: OK'],
+            ['loads' => [20, 1, 1], 'expectedStatus' => CheckStatus::STATUS_WARNING, 'message' => 'Load last minute is 20: warning'],
+            ['loads' => [1, 20, 1], 'expectedStatus' => CheckStatus::STATUS_WARNING, 'message' => 'Load last five minutes is 20: warning'],
+            ['loads' => [1, 1, 20], 'expectedStatus' => CheckStatus::STATUS_WARNING, 'message' => 'Load last fifteen minutes is 20: warning'],
+            ['loads' => [20, 20, 20], 'expectedStatus' => CheckStatus::STATUS_WARNING, 'message' => 'All loads are above 20: warning'],
         ];
+        
+        // Create five separate CpuLoadResults mocks - one for each test case
+        /** @var CpuLoadResults & MockObject $result1Mock */
+        $result1Mock = $this->createMock(CpuLoadResults::class);
+        $result1Mock->method('getLoadLastMinute')->willReturn(1);
+        $result1Mock->method('getLoadLastFiveMinutes')->willReturn(1);
+        $result1Mock->method('getLoadLastFifteenMinutes')->willReturn(1);
+        
+        /** @var CpuLoadResults & MockObject $result2Mock */
+        $result2Mock = $this->createMock(CpuLoadResults::class);
+        $result2Mock->method('getLoadLastMinute')->willReturn(20);
+        $result2Mock->method('getLoadLastFiveMinutes')->willReturn(1);
+        $result2Mock->method('getLoadLastFifteenMinutes')->willReturn(1);
+        
+        /** @var CpuLoadResults & MockObject $result3Mock */
+        $result3Mock = $this->createMock(CpuLoadResults::class);
+        $result3Mock->method('getLoadLastMinute')->willReturn(1);
+        $result3Mock->method('getLoadLastFiveMinutes')->willReturn(20);
+        $result3Mock->method('getLoadLastFifteenMinutes')->willReturn(1);
+        
+        /** @var CpuLoadResults & MockObject $result4Mock */
+        $result4Mock = $this->createMock(CpuLoadResults::class);
+        $result4Mock->method('getLoadLastMinute')->willReturn(1);
+        $result4Mock->method('getLoadLastFiveMinutes')->willReturn(1);
+        $result4Mock->method('getLoadLastFifteenMinutes')->willReturn(20);
+        
+        /** @var CpuLoadResults & MockObject $result5Mock */
+        $result5Mock = $this->createMock(CpuLoadResults::class);
+        $result5Mock->method('getLoadLastMinute')->willReturn(20);
+        $result5Mock->method('getLoadLastFiveMinutes')->willReturn(20);
+        $result5Mock->method('getLoadLastFifteenMinutes')->willReturn(20);
+        
+        /** @var CpuLoadUtils & MockObject $cpuLoadUtilsMock */
+        $cpuLoadUtilsMock = $this->createMock(CpuLoadUtils::class);
+        $cpuLoadUtilsMock->method('measure')
+            ->willReturnOnConsecutiveCalls($result1Mock, $result2Mock, $result3Mock, $result4Mock, $result5Mock);
+
+        $objectManager->addSharedInstance($cpuLoadUtilsMock, CpuLoadUtils::class, true);
+
+        // Run each test case
+        foreach ($testCases as $index => $testCase) {
+            /** @var CpuLoad $cpuLoadCheck */
+            $cpuLoadCheck = $objectManager->create(CpuLoad::class);
+            $checkResult = $cpuLoadCheck->run();
+
+            $this->assertEquals('cpu_load', $checkResult->getName(), "Test case {$index}: {$testCase['message']}");
+            $this->assertEquals($testCase['expectedStatus'], $checkResult->getStatus(), "Test case {$index}: {$testCase['message']}");
+        }
     }
 
     public function testCannotGetCpuLoad(): void
@@ -69,20 +90,14 @@ class CpuLoadTest extends TestCase
         $objectManager = Bootstrap::getObjectManager();
 
         /** @var CpuLoadUtils & MockObject $cpuLoadUtilsMock */
-        $cpuLoadUtilsMock = $this->getMockBuilder(CpuLoadUtils::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['measure'])
-            ->getMock();
+        $cpuLoadUtilsMock = $this->createMock(CpuLoadUtils::class);
         $cpuLoadUtilsMock->method('measure')
             ->willThrowException(new LocalizedException(__('Cannot get CPU load')));
 
-        // Clear the ObjectManager cache to ensure fresh instances
-        $objectManager->clearCache();
-        
-        $objectManager->addSharedInstance($cpuLoadUtilsMock, CpuLoadUtils::class);
+        $objectManager->addSharedInstance($cpuLoadUtilsMock, CpuLoadUtils::class, true);
 
         /** @var CpuLoad $cpuLoadCheck */
-        $cpuLoadCheck = $objectManager->get(CpuLoad::class);
+        $cpuLoadCheck = $objectManager->create(CpuLoad::class);
         $checkResult = $cpuLoadCheck->run();
 
         $this->assertEquals('cpu_load', $checkResult->getName());
@@ -90,29 +105,4 @@ class CpuLoadTest extends TestCase
         $this->assertEquals(CheckStatus::STATUS_CRASHED, $checkResult->getStatus());
     }
 
-    /**
-     * @return CpuLoadUtils&MockObject
-     */
-    private function getCpuLoadUtilsMock(
-        float $loadLastMinute,
-        float $loadLastFiveMinutes,
-        float $loadLastFifteenMinutes
-    ): CpuLoadUtils&MockObject {
-        /** @var CpuLoadResults & MockObject $cpuLoadResultMock */
-        $cpuLoadResultMock = $this->getMockBuilder(\Vendic\OhDear\Utils\CpuLoad\CpuLoadResults::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['getLoadLastMinute', 'getLoadLastFiveMinutes', 'getLoadLastFifteenMinutes'])
-            ->getMock();
-        $cpuLoadResultMock->method('getLoadLastMinute')->willReturn($loadLastMinute);
-        $cpuLoadResultMock->method('getLoadLastFiveMinutes')->willReturn($loadLastFiveMinutes);
-        $cpuLoadResultMock->method('getLoadLastFifteenMinutes')->willReturn($loadLastFifteenMinutes);
-
-        /** @var CpuLoadUtils & MockObject $cpuLoadUtilsMock */
-        $cpuLoadUtilsMock = $this->getMockBuilder(CpuLoadUtils::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['measure'])
-            ->getMock();
-        $cpuLoadUtilsMock->method('measure')->willReturn($cpuLoadResultMock);
-        return $cpuLoadUtilsMock;
-    }
 }

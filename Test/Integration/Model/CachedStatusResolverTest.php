@@ -49,9 +49,6 @@ class CachedStatusResolverTest extends TestCase
 
         $statusResolver->expects($this->any())->method('getTime')->willReturn(self::CURR_TIME);
 
-        // Clear the ObjectManager cache to ensure fresh instances
-        $objectManager->clearCache();
-        
         $objectManager->addSharedInstance($statusResolver, CachedStatusResolver::class);
 
         parent::setUp();

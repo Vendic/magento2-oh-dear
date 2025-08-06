@@ -30,7 +30,7 @@ class DatabaseConnectionCountsTest extends TestCase
         $this->setupCache(Bootstrap::getObjectManager());
 
         /** @var DatabaseConnectionCount $databaseConnectionCheck */
-        $databaseConnectionCheck = Bootstrap::getObjectManager()->get(DatabaseConnectionCount::class);
+        $databaseConnectionCheck = Bootstrap::getObjectManager()->create(DatabaseConnectionCount::class);
 
         $checkResult = $databaseConnectionCheck->run();
         $this->assertEquals('db_connection_count', $checkResult->getName());
@@ -57,15 +57,12 @@ class DatabaseConnectionCountsTest extends TestCase
             ->getMock();
         $dbUtilsMock->method('getConnectionCount')->willReturn($dbConnections);
 
-        // Clear the ObjectManager cache to ensure fresh instances
-        $objectManager->clearCache();
-        
-        $objectManager->addSharedInstance($dbUtilsMock, DbUtils::class);
+        $objectManager->addSharedInstance($dbUtilsMock, DbUtils::class, true);
 
         $this->setupCache($objectManager, $cachedData);
 
         /** @var DatabaseConnectionCount $databaseConnectionCheck */
-        $databaseConnectionCheck = Bootstrap::getObjectManager()->get(DatabaseConnectionCount::class);
+        $databaseConnectionCheck = Bootstrap::getObjectManager()->create(DatabaseConnectionCount::class);
 
         $checkResult = $databaseConnectionCheck->run();
         $this->assertEquals('db_connection_count', $checkResult->getName());
@@ -113,11 +110,8 @@ class DatabaseConnectionCountsTest extends TestCase
         ]);
         $statusResolverMock->method('getTime')->willReturn(self::CURR_TIME);
 
-        // Clear the ObjectManager cache to ensure fresh instances
-        $objectManager->clearCache();
-        
-        $objectManager->addSharedInstance($cacheServiceMock, CacheService::class);
-        $objectManager->addSharedInstance($statusResolverMock, CachedStatusResolver::class);
+        $objectManager->addSharedInstance($cacheServiceMock, CacheService::class, true);
+        $objectManager->addSharedInstance($statusResolverMock, CachedStatusResolver::class, true);
     }
 
     public static function databaseConnectionCountDataProvider(): array
@@ -128,7 +122,7 @@ class DatabaseConnectionCountsTest extends TestCase
                 [
                     'status' => CheckStatus::STATUS_FAILED->value,
                     'fallback_status' => CheckStatus::STATUS_OK->value,
-                    'data' => self::CURR_TIME
+                    'data' => (string)self::CURR_TIME
                 ],
                 CheckStatus::STATUS_OK,
                 CachedStatusResolver::STATUS_OK
@@ -138,7 +132,7 @@ class DatabaseConnectionCountsTest extends TestCase
                 [
                     'status' => CheckStatus::STATUS_FAILED->value,
                     'fallback_status' => CheckStatus::STATUS_OK->value,
-                    'data' => self::CURR_TIME
+                    'data' => (string)self::CURR_TIME
                 ],
                 CheckStatus::STATUS_WARNING,
                 CachedStatusResolver::STATUS_CHANGE
@@ -148,7 +142,7 @@ class DatabaseConnectionCountsTest extends TestCase
                 [
                     'status' => CheckStatus::STATUS_FAILED->value,
                     'fallback_status' => CheckStatus::STATUS_OK->value,
-                    'data' => self::CURR_TIME
+                    'data' => (string)self::CURR_TIME
                 ],
                 CheckStatus::STATUS_OK,
                 CachedStatusResolver::STATUS_IN_THRESHOLD
@@ -158,7 +152,7 @@ class DatabaseConnectionCountsTest extends TestCase
                 [
                     'status' => CheckStatus::STATUS_FAILED->value,
                     'fallback_status' => CheckStatus::STATUS_WARNING->value,
-                    'data' => self::CURR_TIME
+                    'data' => (string)self::CURR_TIME
                 ],
                 CheckStatus::STATUS_WARNING,
                 CachedStatusResolver::STATUS_IN_THRESHOLD
