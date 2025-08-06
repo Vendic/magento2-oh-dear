@@ -18,8 +18,8 @@ use Vendic\OhDear\Service\CacheService;
 class CachedStatusResolverTest extends TestCase
 {
     private const CURR_TIME = 1753797380;
-    
-    private CacheService $cacheService;
+
+    private ?CacheService $cacheService = null;
 
     protected function setUp(): void
     {
