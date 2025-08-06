@@ -19,13 +19,19 @@ class CachedStatusResolverTest extends TestCase
 {
     private const CURR_TIME = 1753797380;
 
+    private ?CacheService $cacheService = null;
+
     protected function setUp(): void
     {
         $objectManager = Bootstrap::getObjectManager();
 
+        // Create and store the cache service to ensure consistency
+        $this->cacheService = $objectManager->create(CacheService::class);
+        $objectManager->addSharedInstance($this->cacheService, CacheService::class, true);
+
         $statusResolver = $this->getMockBuilder(CachedStatusResolver::class)
             ->setConstructorArgs([
-                $objectManager->get(CacheService::class),
+                $this->cacheService,
                 [
                     CachedStatusResolver::STATUS_OK => [
                         'summary' => CachedStatusResolver::STATUS_OK,
@@ -49,7 +55,7 @@ class CachedStatusResolverTest extends TestCase
 
         $statusResolver->expects($this->any())->method('getTime')->willReturn(self::CURR_TIME);
 
-        $objectManager->addSharedInstance($statusResolver, CachedStatusResolver::class);
+        $objectManager->addSharedInstance($statusResolver, CachedStatusResolver::class, true);
 
         parent::setUp();
     }
@@ -58,13 +64,12 @@ class CachedStatusResolverTest extends TestCase
     {
         $objectManager = Bootstrap::getObjectManager();
 
-        $cacheService = $objectManager->get(CacheService::class);
         $checkResult = $objectManager->create(CheckResultInterface::class)
             ->setName('test_check')
             ->setLabel('Test Check');
 
         // To check if cached old value is removed.
-        $cacheService->saveCheckData(
+        $this->cacheService->saveCheckData(
             $checkResult->getName(),
             CheckStatus::STATUS_FAILED->value,
             (string)self::CURR_TIME
@@ -79,9 +84,11 @@ class CachedStatusResolverTest extends TestCase
 
         $this->assertEquals(CheckStatus::STATUS_OK, $checkResult->getStatus());
         $this->assertEquals(CachedStatusResolver::STATUS_OK, $checkResult->getShortSummary());
+        $cachedData = $this->cacheService->getDataForCheck($checkResult->getName());
+        $this->assertIsArray($cachedData, 'Cached data should be an array');
         $this->assertEquals(
             CheckStatus::STATUS_OK->value,
-            $cacheService->getDataForCheck($checkResult->getName())['status']
+            $cachedData['status']
         );
     }
 
@@ -92,12 +99,11 @@ class CachedStatusResolverTest extends TestCase
     {
         $objectManager = Bootstrap::getObjectManager();
 
-        $cacheService = $objectManager->get(CacheService::class);
         $checkResult = $objectManager->create(CheckResultInterface::class)
             ->setName('test_check')
             ->setLabel('Test Check');
 
-        $cacheService->saveCheckData(
+        $this->cacheService->saveCheckData(
             $checkResult->getName(),
             $cachedStatus,
             (string)self::CURR_TIME
@@ -113,7 +119,9 @@ class CachedStatusResolverTest extends TestCase
         $this->assertEquals($expectedStatus, $checkResult->getStatus()->value);
         $this->assertEquals(CachedStatusResolver::STATUS_CHANGE, $checkResult->getShortSummary());
 
-        $savedStatus = $cacheService->getDataForCheck($checkResult->getName())['status'];
+        $cachedData = $this->cacheService->getDataForCheck($checkResult->getName());
+        $this->assertIsArray($cachedData, 'Cached data should be an array');
+        $savedStatus = $cachedData['status'];
         $this->assertEquals($currentStatus->value, $savedStatus);
     }
 
@@ -121,7 +129,6 @@ class CachedStatusResolverTest extends TestCase
     {
         $objectManager = Bootstrap::getObjectManager();
 
-        $cacheService = $objectManager->get(CacheService::class);
         $checkResult = $objectManager->create(CheckResultInterface::class)
             ->setName('test_check')
             ->setLabel('Test Check');
@@ -129,13 +136,13 @@ class CachedStatusResolverTest extends TestCase
         // 4 minutes ago
         $referenceCacheTime = (string)(self::CURR_TIME - 4 * 60);
 
-        $cacheService->removeCheckData($checkResult->getName(), true);
-        $cacheService->saveCheckData(
+        $this->cacheService->removeCheckData($checkResult->getName(), true);
+        $this->cacheService->saveCheckData(
             $checkResult->getName(),
             CheckStatus::STATUS_OK->value,
             (string)($referenceCacheTime - 5)
         );
-        $cacheService->saveCheckData(
+        $this->cacheService->saveCheckData(
             $checkResult->getName(),
             CheckStatus::STATUS_FAILED->value,
             $referenceCacheTime
@@ -153,7 +160,8 @@ class CachedStatusResolverTest extends TestCase
 
         $this->assertEquals(CheckStatus::STATUS_OK, $checkResult->getStatus());
         $this->assertEquals(CachedStatusResolver::STATUS_IN_THRESHOLD, $checkResult->getShortSummary());
-        $cachedValue = $cacheService->getDataForCheck($checkResult->getName());
+        $cachedValue = $this->cacheService->getDataForCheck($checkResult->getName());
+        $this->assertIsArray($cachedValue, 'Cached data should be an array');
         $this->assertEquals(CheckStatus::STATUS_FAILED->value, $cachedValue['status']);
 
         $checkResult = $statusResolver->updateCacheCheck(
@@ -164,7 +172,8 @@ class CachedStatusResolverTest extends TestCase
         $this->assertEquals(CheckStatus::STATUS_OK, $checkResult->getStatus());
         $this->assertEquals(CachedStatusResolver::STATUS_CHANGE, $checkResult->getShortSummary());
 
-        $cachedValue = $cacheService->getDataForCheck($checkResult->getName());
+        $cachedValue = $this->cacheService->getDataForCheck($checkResult->getName());
+        $this->assertIsArray($cachedValue, 'Cached data should be an array');
         $this->assertEquals(CheckStatus::STATUS_WARNING->value, $cachedValue['status']);
     }
 
@@ -176,7 +185,6 @@ class CachedStatusResolverTest extends TestCase
     ) {
         $objectManager = Bootstrap::getObjectManager();
 
-        $cacheService = $objectManager->get(CacheService::class);
         $checkResult = $objectManager->create(CheckResultInterface::class)
             ->setName('test_check')
             ->setLabel('Test Check');
@@ -184,7 +192,7 @@ class CachedStatusResolverTest extends TestCase
         // 10 minutes ago
         $referenceCacheTime = (string)(self::CURR_TIME - 10 * 60);
 
-        $cacheService->saveCheckData(
+        $this->cacheService->saveCheckData(
             $checkResult->getName(),
             $status->value,
             $referenceCacheTime
@@ -203,12 +211,13 @@ class CachedStatusResolverTest extends TestCase
         $this->assertEquals($status, $checkResult->getStatus());
         $this->assertEquals(CachedStatusResolver::STATUS_FAIL, $checkResult->getShortSummary());
 
-        $cachedValue = $cacheService->getDataForCheck($checkResult->getName());
+        $cachedValue = $this->cacheService->getDataForCheck($checkResult->getName());
+        $this->assertIsArray($cachedValue, 'Cached data should be an array');
         $this->assertEquals($status->value, $cachedValue['status']);
         $this->assertEquals($referenceCacheTime, $cachedValue['data']);
     }
 
-    public function statusFlappingDataProvider()
+    public static function statusFlappingDataProvider()
     {
         return [
             [
@@ -229,7 +238,7 @@ class CachedStatusResolverTest extends TestCase
         ];
     }
 
-    public function failStatusesDataProvider()
+    public static function failStatusesDataProvider()
     {
         return [
             [CheckStatus::STATUS_FAILED],
