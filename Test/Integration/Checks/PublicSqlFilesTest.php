@@ -22,21 +22,18 @@ class PublicSqlFilesTest extends TestCase
      */
     public function testGetSqlFilesInPublicLocation(array $sqlFilesInPublicRoot, CheckStatus $expecedCheckStatus): void
     {
-        /** @var ShellUtils & MockObject $shellMock */
-        $shellMock = $this->getMockBuilder(ShellUtils::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['getSqlFilesInPublicRoot'])
-            ->getMock();
-        $shellMock->method('getSqlFilesInPublicRoot')->willReturn($sqlFilesInPublicRoot);
-
         /** @var \Magento\TestFramework\ObjectManager $objectManager */
         $objectManager = Bootstrap::getObjectManager();
         
+        /** @var ShellUtils & MockObject $shellMock */
+        $shellMock = $this->createMock(ShellUtils::class);
+        $shellMock->method('getSqlFilesInPublicRoot')->willReturn($sqlFilesInPublicRoot);
+        
         // Add the mock as a shared instance
-        $objectManager->addSharedInstance($shellMock, ShellUtils::class);
+        $objectManager->addSharedInstance($shellMock, ShellUtils::class, true);
 
         /** @var PublicSqlFiles $publicSqlFilesCheck */
-        $publicSqlFilesCheck = $objectManager->get(PublicSqlFiles::class);
+        $publicSqlFilesCheck = $objectManager->create(PublicSqlFiles::class);
         $checkResult = $publicSqlFilesCheck->run();
 
         $this->assertEquals($expecedCheckStatus, $checkResult->getStatus());

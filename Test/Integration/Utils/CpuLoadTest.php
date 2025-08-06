@@ -17,8 +17,14 @@ class CpuLoadTest extends TestCase
         $cpuLoadUtils = Bootstrap::getObjectManager()->get(CpuLoadUtils::class);
         $cpuLoadResult = $cpuLoadUtils->measure();
 
-        $this->assertGreaterThanOrEqual(0.1, $cpuLoadResult->getLoadLastMinute());
-        $this->assertGreaterThanOrEqual(0.1, $cpuLoadResult->getLoadLastFiveMinutes());
-        $this->assertGreaterThanOrEqual(0.1, $cpuLoadResult->getLoadLastFifteenMinutes());
+        // In CI environments, CPU load can be very low, so just check that we get valid numeric values
+        $this->assertGreaterThanOrEqual(0.0, $cpuLoadResult->getLoadLastMinute());
+        $this->assertGreaterThanOrEqual(0.0, $cpuLoadResult->getLoadLastFiveMinutes());
+        $this->assertGreaterThanOrEqual(0.0, $cpuLoadResult->getLoadLastFifteenMinutes());
+        
+        // Ensure we actually get numeric results
+        $this->assertIsFloat($cpuLoadResult->getLoadLastMinute());
+        $this->assertIsFloat($cpuLoadResult->getLoadLastFiveMinutes());
+        $this->assertIsFloat($cpuLoadResult->getLoadLastFifteenMinutes());
     }
 }
