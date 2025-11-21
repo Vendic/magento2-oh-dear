@@ -76,7 +76,7 @@ class DatabaseConnectionCountsTest extends TestCase
      * @param array|null $cachedData
      * @return void
      */
-    public function setupCache(ObjectManager $objectManager, array $cachedData = null): void
+    public function setupCache(ObjectManager $objectManager, ?array $cachedData = null): void
     {
         /** @var CacheService & MockObject $shellUtilsMock */
         $cacheServiceMock = $this->getMockBuilder(CacheService::class)
