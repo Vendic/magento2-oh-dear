@@ -9,6 +9,7 @@ use Magento\Framework\Module\ModuleList;
 use Magento\Framework\Module\ModuleListInterface;
 use Magento\TestFramework\Helper\Bootstrap;
 use Magento\TestFramework\ObjectManager;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use TddWizard\Fixtures\Core\ConfigFixture;
@@ -41,9 +42,7 @@ class TwoFactorAuthenticationTest extends TestCase
         $this->configFixture = null;
     }
 
-    /**
-     * @dataProvider twoFactorAuthConfigDataProvider
-     */
+    #[DataProvider('twoFactorAuthConfigDataProvider')]
     public function testTwoFactorAuthWithConfig(
         string $configValue,
         CheckStatus $expectedStatus,
