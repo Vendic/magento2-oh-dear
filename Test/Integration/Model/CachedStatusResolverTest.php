@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Integration\Model;
 
 use Magento\TestFramework\Helper\Bootstrap;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Vendic\OhDear\Api\Data\CheckResultInterface;
 use Vendic\OhDear\Api\Data\CheckStatus;
@@ -92,9 +93,7 @@ class CachedStatusResolverTest extends TestCase
         );
     }
 
-    /**
-     * @dataProvider statusFlappingDataProvider
-     */
+    #[DataProvider('statusFlappingDataProvider')]
     public function testStatusChange(string $cachedStatus, CheckStatus $currentStatus, string $expectedStatus): void
     {
         $objectManager = Bootstrap::getObjectManager();
@@ -177,9 +176,7 @@ class CachedStatusResolverTest extends TestCase
         $this->assertEquals(CheckStatus::STATUS_WARNING->value, $cachedValue['status']);
     }
 
-    /**
-     * @dataProvider failStatusesDataProvider
-     */
+    #[DataProvider('failStatusesDataProvider')]
     public function testActualStatusChange(
         CheckStatus $status
     ) {

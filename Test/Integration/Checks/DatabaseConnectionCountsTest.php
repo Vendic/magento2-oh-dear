@@ -9,6 +9,7 @@ use Magento\Framework\App\CacheInterface;
 use Magento\Framework\Serialize\Serializer\Json;
 use Magento\TestFramework\Helper\Bootstrap;
 use Magento\TestFramework\ObjectManager;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Vendic\OhDear\Api\Data\CheckStatus;
@@ -38,9 +39,7 @@ class DatabaseConnectionCountsTest extends TestCase
         $this->assertEquals(CachedStatusResolver::STATUS_OK, $checkResult->getShortSummary());
     }
 
-    /**
-     * @dataProvider databaseConnectionCountDataProvider
-     */
+    #[DataProvider('databaseConnectionCountDataProvider')]
     public function testDatabaseConnectionCountWarning(
         int         $dbConnections,
         array $cachedData,

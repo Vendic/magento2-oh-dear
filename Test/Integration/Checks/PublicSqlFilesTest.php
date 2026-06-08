@@ -7,6 +7,7 @@ namespace Vendic\OhDear\Test\Integration\Checks;
 
 use Magento\Framework\ObjectManager\ObjectManager;
 use Magento\TestFramework\Helper\Bootstrap;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Vendic\OhDear\Api\Data\CheckStatus;
@@ -18,8 +19,8 @@ class PublicSqlFilesTest extends TestCase
 {
     /**
      * @magentoAppIsolation enabled
-     * @dataProvider dataProvider
      */
+    #[DataProvider('dataProvider')]
     public function testGetSqlFilesInPublicLocation(array $sqlFilesInPublicRoot, CheckStatus $expecedCheckStatus): void
     {
         /** @var \Magento\TestFramework\ObjectManager $objectManager */
