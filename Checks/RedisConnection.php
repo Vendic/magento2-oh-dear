@@ -4,6 +4,7 @@ namespace Vendic\OhDear\Checks;
 
 use Magento\Framework\App\DeploymentConfig;
 use Magento\Setup\Model\ConfigOptionsList\Cache;
+use Magento\Setup\Model\ConfigOptionsList\PageCache;
 use Vendic\OhDear\Api\CheckInterface;
 use Vendic\OhDear\Api\Data\CheckResultInterface;
 use Vendic\OhDear\Api\Data\CheckStatus;
@@ -27,7 +28,12 @@ class RedisConnection implements CheckInterface
     public function run(): CheckResultInterface
     {
         $deploymentConfig = $this->deploymentConfig;
-        $options = [];
+        $options = [
+            Cache::INPUT_KEY_CACHE_BACKEND => $this->getBackendCacheType($deploymentConfig),
+            PageCache::INPUT_KEY_PAGE_CACHE_BACKEND => $deploymentConfig->get(
+                PageCache::CONFIG_PATH_PAGE_CACHE_BACKEND
+            ),
+        ];
         /** @var CheckResultInterface $checkResult */
 
         $checkResult = $this->checkResultFactory->create();
