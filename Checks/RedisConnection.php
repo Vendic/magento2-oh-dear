@@ -29,10 +29,8 @@ class RedisConnection implements CheckInterface
     {
         $deploymentConfig = $this->deploymentConfig;
         $options = [
-            Cache::INPUT_KEY_CACHE_BACKEND => $this->getBackendCacheType($deploymentConfig),
-            PageCache::INPUT_KEY_PAGE_CACHE_BACKEND => $deploymentConfig->get(
-                PageCache::CONFIG_PATH_PAGE_CACHE_BACKEND
-            ),
+            Cache::INPUT_KEY_CACHE_BACKEND => null,
+            PageCache::INPUT_KEY_PAGE_CACHE_BACKEND => null,
         ];
         /** @var CheckResultInterface $checkResult */
 
