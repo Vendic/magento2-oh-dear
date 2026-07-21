@@ -71,12 +71,10 @@ class CpuLoadTest extends TestCase
         $cpuLoadUtilsMock->method('measure')
             ->willReturnOnConsecutiveCalls($result1Mock, $result2Mock, $result3Mock, $result4Mock, $result5Mock);
 
-        $objectManager->addSharedInstance($cpuLoadUtilsMock, CpuLoadUtils::class, true);
-
         // Run each test case
         foreach ($testCases as $index => $testCase) {
             /** @var CpuLoad $cpuLoadCheck */
-            $cpuLoadCheck = $objectManager->create(CpuLoad::class);
+            $cpuLoadCheck = $objectManager->create(CpuLoad::class, ['cpuLoadUtils' => $cpuLoadUtilsMock]);
             $checkResult = $cpuLoadCheck->run();
 
             $this->assertEquals('cpu_load', $checkResult->getName(), "Test case {$index}: {$testCase['message']}");
@@ -94,10 +92,8 @@ class CpuLoadTest extends TestCase
         $cpuLoadUtilsMock->method('measure')
             ->willThrowException(new LocalizedException(__('Cannot get CPU load')));
 
-        $objectManager->addSharedInstance($cpuLoadUtilsMock, CpuLoadUtils::class, true);
-
         /** @var CpuLoad $cpuLoadCheck */
-        $cpuLoadCheck = $objectManager->create(CpuLoad::class);
+        $cpuLoadCheck = $objectManager->create(CpuLoad::class, ['cpuLoadUtils' => $cpuLoadUtilsMock]);
         $checkResult = $cpuLoadCheck->run();
 
         $this->assertEquals('cpu_load', $checkResult->getName());
