@@ -32,9 +32,7 @@ class StoreFrontChecker
                 continue;
             }
 
-            // phpcs:ignore Magento2.Functions.DiscouragedFunction
-            $domain = parse_url($url, PHP_URL_HOST) ?: $url;
-            $failed[$domain] = $error ?? sprintf('HTTP %d', $status);
+            $failed[$url] = $error ?? sprintf('HTTP %d', $status);
         }
 
         return [

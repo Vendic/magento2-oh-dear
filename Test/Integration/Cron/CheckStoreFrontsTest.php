@@ -29,9 +29,10 @@ class CheckStoreFrontsTest extends TestCase
     /**
      * @magentoDbIsolation enabled
      * @magentoDataFixture Magento/Store/_files/second_store.php
-     * @magentoConfigFixture fixture_second_store_store web/secure/base_url https://second.example.com/
+     * @magentoConfigFixture fixture_second_store_store web/seo/use_rewrites 1
+     * @magentoConfigFixture fixture_second_store_store web/secure/base_link_url https://second.example.com/
      */
-    public function testStoresFailedDomainsForTheStoreFrontsCheck(): void
+    public function testStoresFailedUrlsForTheStoreFrontsCheck(): void
     {
         $this->runCron(['https://second.example.com/' => ['status' => 503, 'error' => null]]);
 
@@ -39,15 +40,16 @@ class CheckStoreFrontsTest extends TestCase
 
         $this->assertEquals(CheckStatus::STATUS_FAILED, $output->getStatus());
         $this->assertEquals(
-            ['second.example.com' => 'HTTP 503'],
-            $output->getMeta()['failed_domains']
+            ['https://second.example.com/' => 'HTTP 503'],
+            $output->getMeta()['failed_urls']
         );
     }
 
     /**
      * @magentoDbIsolation enabled
      * @magentoDataFixture Magento/Store/_files/second_store.php
-     * @magentoConfigFixture fixture_second_store_store web/secure/base_url https://second.example.com/
+     * @magentoConfigFixture fixture_second_store_store web/seo/use_rewrites 1
+     * @magentoConfigFixture fixture_second_store_store web/secure/base_link_url https://second.example.com/
      */
     public function testStoresOkResultWhenAllStoreFrontsAreReachable(): void
     {

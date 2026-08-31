@@ -47,7 +47,7 @@ class StoreFronts implements CheckInterface
 
         $checkedAt = (int)($results['checked_at'] ?? 0);
         $checkedCount = (int)($results['checked_count'] ?? 0);
-        $failedDomains = (array)($results['failed'] ?? []);
+        $failedUrls = (array)($results['failed'] ?? []);
 
         if (!$checkedCount) {
             $checkResult->setStatus(CheckStatus::STATUS_OK);
@@ -58,17 +58,17 @@ class StoreFronts implements CheckInterface
             return $checkResult;
         }
 
-        if ($failedDomains !== []) {
+        if ($failedUrls !== []) {
             $checkResult->setStatus(CheckStatus::STATUS_FAILED);
             $checkResult->setShortSummary(
-                sprintf('%d of %d children store front(s) down', count($failedDomains), $checkedCount)
+                sprintf('%d of %d children store front(s) down', count($failedUrls), $checkedCount)
             );
             $checkResult->setNotificationMessage(
-                sprintf('Children store fronts down: %s', implode(', ', array_keys($failedDomains)))
+                sprintf('Children store fronts down: %s', implode(', ', array_keys($failedUrls)))
             );
             $checkResult->setMeta(
                 [
-                    'failed_domains' => $failedDomains,
+                    'failed_urls' => $failedUrls,
                     'checked_count' => $checkedCount,
                     'checked_at' => $checkedAt,
                 ]

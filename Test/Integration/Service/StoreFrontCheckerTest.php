@@ -39,12 +39,13 @@ class StoreFrontCheckerTest extends TestCase
 
         $this->assertSame(
             [
-                'store2.example.com' => 'HTTP 500',
-                'store3.example.com' => 'HTTP 301',
-                'store4.example.com' => 'Connection timed out',
+                'https://store2.example.com/' => 'HTTP 500',
+                'https://store3.example.com/' => 'HTTP 301',
+                'https://store4.example.com/' => 'Connection timed out',
             ],
             $result['failed'],
-            'Only domains that did not end in an HTTP 200 should be reported, keyed by domain'
+            'Only URLs that did not end in an HTTP 200 should be reported, keyed by the full URL '
+            . 'since multiple stores can share a domain with different path prefixes'
         );
         $this->assertSame(4, $result['checked_count']);
     }

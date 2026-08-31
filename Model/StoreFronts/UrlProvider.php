@@ -24,23 +24,21 @@ class UrlProvider
      */
     public function getUrls(): array
     {
-        $defaultStoreView = $this->storeManager->getDefaultStoreView();
-        $baseUrls = [];
+        $defaultStoreId = (int)$this->storeManager->getDefaultStoreView()?->getId();
+        $urls = [];
 
         foreach ($this->storeManager->getStores() as $store) {
-            if (!$this->isActive($store)) {
+            if ((int)$store->getId() === $defaultStoreId || !$this->isActive($store)) {
                 continue;
             }
 
-            $baseUrl = $this->getBaseUrl($store);
-            if ($baseUrl === null || $baseUrl === $defaultStoreView || in_array($baseUrl, $baseUrls)) {
-                continue;
+            $url = $this->getLinkUrl($store);
+            if (!in_array($url, $urls, true)) {
+                $urls[] = $url;
             }
-
-            $baseUrls[] = $this->getBaseUrl($store);
         }
 
-        return $baseUrls;
+        return $urls;
     }
 
     private function isActive(StoreInterface $store): bool
@@ -48,17 +46,9 @@ class UrlProvider
         return $store instanceof Store ? $store->isActive() : (bool)$store->getIsActive();
     }
 
-    private function getHost(StoreInterface $store): ?string
-    {
-        // phpcs:ignore Magento2.Functions.DiscouragedFunction
-        $host = parse_url($this->getBaseUrl($store), PHP_URL_HOST);
-
-        return is_string($host) ? $host : null;
-    }
-
-    private function getBaseUrl(StoreInterface $store): string
+    private function getLinkUrl(StoreInterface $store): string
     {
         /** @var Store $store */
-        return $store->getBaseUrl(UrlInterface::URL_TYPE_WEB, true);
+        return $store->getBaseUrl(UrlInterface::URL_TYPE_LINK, true);
     }
 }
