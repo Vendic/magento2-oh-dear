@@ -49,6 +49,33 @@ To disable any check, add an entry to your `env.php` with the check class name a
 ## Checks
 TODO
 
+### Store fronts
+Oh Dear monitors one domain per site, but a single Magento instance often serves many store views on
+different domains. The `store_fronts` check reports on the availability of all those child store domains:
+
+- An hourly cron (`vendic_ohdear_check_store_fronts`) collects the link URL of every active store view
+  and requests them in parallel with a 10 second timeout, following up to 5 redirects. The link URL
+  respects a store's custom base URL when configured and includes the store code path when "add store
+  code to URLs" is enabled (e.g. `https://ivol.test/deurmat24_nl/`), so it matches the URLs Magento
+  itself generates. URLs are deduplicated and the default store view is excluded, since Oh Dear already
+  monitors that domain directly.
+- A store front counts as reachable only when the request ends in an HTTP 200.
+- Only failing URLs are stored and reported. When one or more store fronts are down the check fails and
+  the failed URLs (with their HTTP status or connection error) are attached as meta under `failed_urls`.
+- The check reports OK when the cron has not produced results yet (e.g. right after a deploy) or when
+  there are no children store fronts to check, and warns when the cached results are older than 2 hours,
+  so a broken cron does not go unnoticed.
+
+Disable it like any other check via `env.php`:
+```php
+    'ohdear' => [
+        \Vendic\OhDear\Checks\StoreFronts::class => [
+            'enabled' => false
+        ],
+    ]
+```
+Disabling the check also stops the cron from making any requests.
+
 ## Write your own checks
 1. Create a new class that implements `Vendic\OhDear\Interfaces\CheckInterface`, place it in 'Checks'. This class will contain the main logic of your check.
 2. Add your new class to the 'checks' argument of `Vendic\OhDear\Api\CheckListInterface`

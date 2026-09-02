@@ -21,7 +21,32 @@
                 <item name="two_factor_authentication" xsi:type="object">
                     Vendic\OhDear\Checks\TwoFactorAuthentication
                 </item>
+                <item name="store_fronts" xsi:type="object">Vendic\OhDear\Checks\StoreFronts</item>
             </argument>
+        </arguments>
+    </type>
+
+    <!-- Store front check HTTP client: fail within 10s and follow at most 5 redirects -->
+    <virtualType name="VendicOhDearStoreFrontsGuzzleClient" type="GuzzleHttp\Client">
+        <arguments>
+            <argument name="config" xsi:type="array">
+                <item name="timeout" xsi:type="number">10</item>
+                <item name="connect_timeout" xsi:type="number">10</item>
+                <item name="allow_redirects" xsi:type="array">
+                    <item name="max" xsi:type="number">5</item>
+                </item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="VendicOhDearStoreFrontsAsyncClient"
+                 type="Magento\Framework\HTTP\AsyncClient\GuzzleAsyncClient">
+        <arguments>
+            <argument name="client" xsi:type="object">VendicOhDearStoreFrontsGuzzleClient</argument>
+        </arguments>
+    </virtualType>
+    <type name="Vendic\OhDear\Model\StoreFronts\HttpStatusFetcher">
+        <arguments>
+            <argument name="asyncClient" xsi:type="object">VendicOhDearStoreFrontsAsyncClient</argument>
         </arguments>
     </type>
 
