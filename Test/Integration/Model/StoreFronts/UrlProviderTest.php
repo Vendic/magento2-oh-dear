@@ -20,7 +20,7 @@ class UrlProviderTest extends TestCase
      * @magentoDbIsolation enabled
      * @magentoDataFixture Magento/Store/_files/second_store.php
      * @magentoConfigFixture fixture_second_store_store web/seo/use_rewrites 1
-     * @magentoConfigFixture fixture_second_store_store web/url/use_store 1
+     * @magentoConfigFixture default/web/url/use_store 1
      */
     public function testReturnsStoreCodePrefixedUrlsOnTheDefaultDomain(): void
     {
@@ -47,7 +47,7 @@ class UrlProviderTest extends TestCase
      * @magentoDbIsolation enabled
      * @magentoDataFixture Magento/Store/_files/second_store.php
      * @magentoConfigFixture fixture_second_store_store web/seo/use_rewrites 1
-     * @magentoConfigFixture fixture_second_store_store web/url/use_store 1
+     * @magentoConfigFixture default/web/url/use_store 1
      * @magentoConfigFixture fixture_second_store_store web/secure/base_link_url https://second.example.com/
      * @magentoConfigFixture fixture_second_store_store web/unsecure/base_link_url https://second.example.com/
      */
