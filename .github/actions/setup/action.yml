@@ -7,6 +7,10 @@ inputs:
   magento-version:
     description: 'Magento version'
     required: true
+  mysql-image:
+    description: 'MySQL Docker image, must match the Magento version requirements'
+    required: false
+    default: 'mysql:5.7'
 outputs:
   docker-container-name:
     description: 'Docker container name'
@@ -32,7 +36,7 @@ runs:
 
     - name: Start Docker
       shell: bash
-      run: PHP_VERSION=${{ inputs.php-version }} MAGENTO_VERSION=magento${{ inputs.magento-version }} docker compose -f .github/actions/setup/templates/docker-compose.yml up -d
+      run: PHP_VERSION=${{ inputs.php-version }} MAGENTO_VERSION=magento${{ inputs.magento-version }} MYSQL_IMAGE=${{ inputs.mysql-image }} docker compose -f .github/actions/setup/templates/docker-compose.yml up -d
 
     - name: Create branch for Composer
       shell: bash
