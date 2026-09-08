@@ -13,6 +13,7 @@ use Magento\Store\Api\Data\StoreInterface;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use Vendic\OhDear\Checks\StoreFronts;
+use Vendic\OhDear\Utils\Configuration;
 
 class UrlProvider
 {
