@@ -37,7 +37,7 @@ class UrlProvider
                 || !$this->isActive($store)
                 || in_array(
                     $store->getCode(),
-                    $this->configuration->getCheckConfigValue(StoreFronts::class, "excluded_stores") ?? []
+                    $this->configuration->getCheckConfigValue(StoreFronts, "excluded_stores") ?? []
                 )
             ) {
                 continue;
