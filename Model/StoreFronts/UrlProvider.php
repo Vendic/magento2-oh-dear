@@ -12,7 +12,6 @@ use Magento\Framework\UrlInterface;
 use Magento\Store\Api\Data\StoreInterface;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
-use Vendic\OhDear\Utils\Configuration;
 use Vendic\OhDear\Checks\StoreFronts;
 
 class UrlProvider
@@ -20,6 +19,7 @@ class UrlProvider
     public function __construct(
         private StoreManagerInterface $storeManager,
         private Configuration $configuration,
+        private StoreFronts $storeFrontsCheck
     ) {
     }
 
@@ -37,7 +37,7 @@ class UrlProvider
                 || !$this->isActive($store)
                 || in_array(
                     $store->getCode(),
-                    $this->configuration->getCheckConfigValue(StoreFronts, "excluded_stores") ?? []
+                    $this->configuration->getCheckConfigValue($this->storeFrontsCheck, "excluded_stores") ?? []
                 )
             ) {
                 continue;
