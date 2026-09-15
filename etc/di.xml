@@ -51,6 +51,11 @@
     </type>
 
     <!-- Check inputs -->
+    <type name="Vendic\OhDear\Checks\StoreFronts">
+        <arguments>
+            <argument name="statusTimeThreshold" xsi:type="number">5</argument>
+        </arguments>
+    </type>
     <type name="Vendic\OhDear\Checks\Diskspace">
         <arguments>
             <argument name="maxPercentageUsed" xsi:type="number">80</argument>

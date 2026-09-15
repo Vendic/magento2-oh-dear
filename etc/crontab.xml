@@ -7,5 +7,10 @@
              method="execute">
             <schedule>0 * * * *</schedule>
         </job>
+        <job name="vendic_ohdear_recheck_failed_store_fronts"
+             instance="Vendic\OhDear\Cron\RecheckFailedStoreFronts"
+             method="execute">
+            <schedule>*/2 * * * *</schedule>
+        </job>
     </group>
 </config>

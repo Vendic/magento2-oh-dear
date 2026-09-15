@@ -1,4 +1,7 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
+
 /**
  * @copyright   Copyright (c) Vendic B.V https://vendic.nl/
  */
@@ -7,7 +10,6 @@ namespace Vendic\OhDear\Test\Integration\Cron;
 
 use Magento\TestFramework\Helper\Bootstrap;
 use PHPUnit\Framework\TestCase;
-use Vendic\OhDear\Api\Data\CheckStatus;
 use Vendic\OhDear\Checks\StoreFronts;
 use Vendic\OhDear\Cron\CheckStoreFronts;
 use Vendic\OhDear\Model\StoreFronts\HttpStatusFetcher;
@@ -16,14 +18,17 @@ use Vendic\OhDear\Service\StoreFrontChecker;
 
 class CheckStoreFrontsTest extends TestCase
 {
+    private CacheService $cacheService;
+
     protected function setUp(): void
     {
-        Bootstrap::getObjectManager()->get(CacheService::class)->removeCheckData(StoreFronts::CHECK_NAME);
+        $this->cacheService = Bootstrap::getObjectManager()->get(CacheService::class);
+        $this->cacheService->removeCheckData(StoreFronts::RESULTS_CACHE_KEY);
     }
 
     protected function tearDown(): void
     {
-        Bootstrap::getObjectManager()->get(CacheService::class)->removeCheckData(StoreFronts::CHECK_NAME);
+        $this->cacheService->removeCheckData(StoreFronts::RESULTS_CACHE_KEY);
     }
 
     /**
@@ -36,13 +41,10 @@ class CheckStoreFrontsTest extends TestCase
     {
         $this->runCron(['https://second.example.com/' => ['status' => 503, 'error' => null]]);
 
-        $output = $this->runCheck();
-
-        $this->assertEquals(CheckStatus::STATUS_FAILED, $output->getStatus());
-        $this->assertEquals(
-            ['https://second.example.com/' => 'HTTP 503'],
-            $output->getMeta()['failed_urls']
-        );
+        $results = $this->readResults();
+        $this->assertEquals(['https://second.example.com/' => 'HTTP 503'], $results['failed']);
+        $this->assertGreaterThanOrEqual(1, $results['checked_count']);
+        $this->assertEqualsWithDelta(time(), $results['checked_at'], 10);
     }
 
     /**
@@ -55,9 +57,7 @@ class CheckStoreFrontsTest extends TestCase
     {
         $this->runCron(['https://second.example.com/' => ['status' => 200, 'error' => null]]);
 
-        $output = $this->runCheck();
-
-        $this->assertEquals(CheckStatus::STATUS_OK, $output->getStatus());
+        $this->assertSame([], $this->readResults()['failed']);
     }
 
     public function testDoesNotCheckAnythingWhenTheStoreFrontsCheckIsDisabled(): void
@@ -114,8 +114,11 @@ class CheckStoreFrontsTest extends TestCase
         $cron->execute();
     }
 
-    private function runCheck(): \Vendic\OhDear\Api\Data\CheckResultInterface
+    private function readResults(): array
     {
-        return Bootstrap::getObjectManager()->create(StoreFronts::class)->run();
+        $cached = $this->cacheService->getDataForCheck(StoreFronts::RESULTS_CACHE_KEY);
+        $this->assertIsArray($cached['data'] ?? null, 'Expected store front results to be cached');
+
+        return $cached['data'];
     }
 }

@@ -1,4 +1,7 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
+
 /**
  * @copyright   Copyright (c) Vendic B.V https://vendic.nl/
  */
@@ -18,12 +21,12 @@ class StoreFrontsTest extends TestCase
     protected function setUp(): void
     {
         $this->cacheService = Bootstrap::getObjectManager()->get(CacheService::class);
-        $this->cacheService->removeCheckData(StoreFronts::CHECK_NAME);
+        $this->clearCache();
     }
 
     protected function tearDown(): void
     {
-        $this->cacheService->removeCheckData(StoreFronts::CHECK_NAME);
+        $this->clearCache();
     }
 
     public function testOkWhenCronHasNeverRun(): void
@@ -40,7 +43,7 @@ class StoreFrontsTest extends TestCase
 
     public function testOkWhenThereAreNoChildStoresToCheck(): void
     {
-        $this->seedCache(
+        $this->seedResults(
             [
                 'checked_at' => time(),
                 'checked_count' => 0,
@@ -59,7 +62,7 @@ class StoreFrontsTest extends TestCase
 
     public function testOkWhenAllStoreFrontsAreReachable(): void
     {
-        $this->seedCache(
+        $this->seedResults(
             [
                 'checked_at' => time(),
                 'checked_count' => 3,
@@ -78,21 +81,23 @@ class StoreFrontsTest extends TestCase
         $this->assertEquals(3, $output->getMeta()['checked_count']);
     }
 
-    public function testFailedWhenStoreFrontsAreDown(): void
+    public function testFailedWhenStoreFrontsStayDownBeyondTheStatusTimeThreshold(): void
     {
         $failedUrls = [
             'https://store2.example.com/' => 'HTTP 500',
             'https://ivol.example.com/deurmat24_nl/' => 'Connection timed out',
         ];
-        $this->seedCache(
+        $this->seedResults(
             [
                 'checked_at' => time(),
                 'checked_count' => 3,
                 'failed' => $failedUrls,
             ]
         );
+        // The failed status has been cached longer ago than the status time threshold
+        $this->seedResolverState(CheckStatus::STATUS_FAILED->value, time() - 600);
 
-        $output = $this->createCheck()->run();
+        $output = $this->createCheck(statusTimeThreshold: 0)->run();
 
         $this->assertEquals(CheckStatus::STATUS_FAILED, $output->getStatus());
         $this->assertEquals(
@@ -100,12 +105,36 @@ class StoreFrontsTest extends TestCase
             $output->getMeta()['failed_urls'],
             'Meta should list only the failed store front URLs with their failure reason'
         );
-        $this->assertStringContainsString('2', $output->getShortSummary());
+        $this->assertStringContainsString('2', $output->getNotificationMessage());
+    }
+
+    public function testFirstFailureIsDampedByTheStatusTimeThreshold(): void
+    {
+        $this->seedResults(
+            [
+                'checked_at' => time(),
+                'checked_count' => 3,
+                'failed' => ['https://store2.example.com/' => 'HTTP 500'],
+            ]
+        );
+
+        $output = $this->createCheck(statusTimeThreshold: 5)->run();
+
+        $this->assertEquals(
+            CheckStatus::STATUS_OK,
+            $output->getStatus(),
+            'A fresh failure should not alert until it persists for the status time threshold (flapping protection)'
+        );
+        $this->assertArrayHasKey(
+            'failed_urls',
+            $output->getMeta(),
+            'The failing URLs should already be visible in the meta while the status change is being damped'
+        );
     }
 
     public function testWarningWhenResultsAreStale(): void
     {
-        $this->seedCache(
+        $this->seedResults(
             [
                 'checked_at' => time() - 8000,
                 'checked_count' => 3,
@@ -122,17 +151,31 @@ class StoreFrontsTest extends TestCase
         );
     }
 
-    private function createCheck(): StoreFronts
+    private function createCheck(int $statusTimeThreshold = 0): StoreFronts
     {
-        return Bootstrap::getObjectManager()->create(StoreFronts::class);
+        return Bootstrap::getObjectManager()->create(
+            StoreFronts::class,
+            ['statusTimeThreshold' => $statusTimeThreshold]
+        );
     }
 
-    private function seedCache(array $data): void
+    private function seedResults(array $data): void
     {
         $this->cacheService->saveCheckData(
-            StoreFronts::CHECK_NAME,
+            StoreFronts::RESULTS_CACHE_KEY,
             $data['failed'] === [] ? CheckStatus::STATUS_OK->value : CheckStatus::STATUS_FAILED->value,
             $data
         );
+    }
+
+    private function seedResolverState(string $status, int $time): void
+    {
+        $this->cacheService->saveCheckData(StoreFronts::CHECK_NAME, $status, (string)$time);
+    }
+
+    private function clearCache(): void
+    {
+        $this->cacheService->removeCheckData(StoreFronts::RESULTS_CACHE_KEY);
+        $this->cacheService->removeCheckData(StoreFronts::CHECK_NAME);
     }
 }
