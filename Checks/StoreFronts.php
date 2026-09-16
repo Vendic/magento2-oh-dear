@@ -11,16 +11,22 @@ namespace Vendic\OhDear\Checks;
 use Vendic\OhDear\Api\CheckInterface;
 use Vendic\OhDear\Api\Data\CheckResultInterface;
 use Vendic\OhDear\Api\Data\CheckStatus;
+use Vendic\OhDear\Model\CachedStatusResolver;
 use Vendic\OhDear\Model\CheckResultFactory;
 use Vendic\OhDear\Service\CacheService;
+use Vendic\OhDear\Utils\Configuration;
 
 class StoreFronts implements CheckInterface
 {
     public const CHECK_NAME = 'store_fronts';
+    public const RESULTS_CACHE_KEY = 'store_fronts_results';
 
     public function __construct(
         private CacheService $cacheService,
         private CheckResultFactory $checkResultFactory,
+        private CachedStatusResolver $cachedStatusResolver,
+        private Configuration $configuration,
+        private int $statusTimeThreshold = 5,
         private int $maxResultAgeSeconds = 7200
     ) {
     }
@@ -33,7 +39,7 @@ class StoreFronts implements CheckInterface
         $checkResult->setLabel('Store fronts');
         $checkResult->setMeta([]);
 
-        $cachedCheck = $this->cacheService->getDataForCheck(self::CHECK_NAME);
+        $cachedCheck = $this->cacheService->getDataForCheck(self::RESULTS_CACHE_KEY);
         $results = is_array($cachedCheck['data'] ?? null) ? $cachedCheck['data'] : null;
 
         if ($results === null) {
@@ -58,25 +64,7 @@ class StoreFronts implements CheckInterface
             return $checkResult;
         }
 
-        if ($failedUrls !== []) {
-            $checkResult->setStatus(CheckStatus::STATUS_FAILED);
-            $checkResult->setShortSummary(
-                sprintf('%d of %d children store front(s) down', count($failedUrls), $checkedCount)
-            );
-            $checkResult->setNotificationMessage(
-                sprintf('Children store fronts down: %s', implode(', ', array_keys($failedUrls)))
-            );
-            $checkResult->setMeta(
-                [
-                    'failed_urls' => $failedUrls,
-                    'checked_count' => $checkedCount,
-                    'checked_at' => $checkedAt,
-                ]
-            );
-            return $checkResult;
-        }
-
-        if ($checkedAt < time() - $this->maxResultAgeSeconds) {
+        if ($failedUrls === [] && $checkedAt < time() - $this->maxResultAgeSeconds) {
             $checkResult->setStatus(CheckStatus::STATUS_WARNING);
             $checkResult->setShortSummary('Store front results are stale');
             $checkResult->setNotificationMessage(
@@ -89,11 +77,44 @@ class StoreFronts implements CheckInterface
             return $checkResult;
         }
 
-        $checkResult->setStatus(CheckStatus::STATUS_OK);
-        $checkResult->setShortSummary('All store fronts reachable');
-        $checkResult->setNotificationMessage(
-            sprintf('All %d store front(s) are reachable', $checkedCount)
+        return $this->processStatus($checkResult, $failedUrls, $checkedCount, $checkedAt);
+    }
+
+    /**
+     * @param string[] $failedUrls
+     */
+    private function processStatus(
+        CheckResultInterface $checkResult,
+        array $failedUrls,
+        int $checkedCount,
+        int $checkedAt
+    ): CheckResultInterface {
+        $this->cachedStatusResolver->setStatusTimeThreshold($this->getStatusTimeThreshold());
+        $this->cachedStatusResolver->setMessagesByStatus(
+            [
+                CachedStatusResolver::STATUS_FAIL => [
+                    'summary' => '%s: %s children store front(s) down',
+                    'notification_message' => '%s has children store fronts down (%s)',
+                ],
+            ]
         );
+
+        if ($failedUrls !== []) {
+            $checkResult->setMeta(
+                [
+                    'failed_urls' => $failedUrls,
+                    'checked_count' => $checkedCount,
+                    'checked_at' => $checkedAt,
+                ]
+            );
+
+            return $this->cachedStatusResolver->updateCacheCheck(
+                $checkResult,
+                CheckStatus::STATUS_FAILED,
+                count($failedUrls)
+            );
+        }
+
         $checkResult->setMeta(
             [
                 'checked_count' => $checkedCount,
@@ -101,6 +122,13 @@ class StoreFronts implements CheckInterface
             ]
         );
 
-        return $checkResult;
+        return $this->cachedStatusResolver->updateCacheCheck($checkResult, CheckStatus::STATUS_OK);
+    }
+
+    private function getStatusTimeThreshold(): int
+    {
+        $configValue = $this->configuration->getCheckConfigValue($this, 'status_time_treshold');
+
+        return is_numeric($configValue) ? (int)$configValue : $this->statusTimeThreshold;
     }
 }

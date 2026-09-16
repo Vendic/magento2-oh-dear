@@ -114,12 +114,44 @@ class UrlProviderTest extends TestCase
     }
 
     /**
+     * @magentoDbIsolation enabled
+     * @magentoDataFixture Magento/Store/_files/second_store.php
+     * @magentoConfigFixture fixture_second_store_store web/seo/use_rewrites 1
+     * @magentoConfigFixture fixture_second_store_store web/secure/base_link_url https://second.example.com/
+     */
+    public function testExcludesStoresListedInTheExcludedStoresCheckConfig(): void
+    {
+        $this->assertNotContains(
+            'https://second.example.com/',
+            $this->getUrls(excludedStores: ['fixture_second_store']),
+            'Stores listed in the excluded_stores check config should not be checked'
+        );
+    }
+
+    /**
+     * @param string[]|null $excludedStores store codes for the excluded_stores check config, null for none
      * @return string[]
      */
-    private function getUrls(): array
+    private function getUrls(?array $excludedStores = null): array
     {
+        $objectManager = Bootstrap::getObjectManager();
+        $arguments = [];
+
+        if ($excludedStores !== null) {
+            $deploymentConfig = $this->createMock(\Magento\Framework\App\DeploymentConfig::class);
+            $deploymentConfig->method('get')->willReturnCallback(
+                fn (?string $key = null) => $key === 'ohdear'
+                    ? [\Vendic\OhDear\Checks\StoreFronts::class => ['excluded_stores' => $excludedStores]]
+                    : null
+            );
+            $arguments['configuration'] = $objectManager->create(
+                \Vendic\OhDear\Utils\Configuration::class,
+                ['deploymentConfig' => $deploymentConfig]
+            );
+        }
+
         /** @var UrlProvider $urlProvider */
-        $urlProvider = Bootstrap::getObjectManager()->create(UrlProvider::class);
+        $urlProvider = $objectManager->create(UrlProvider::class, $arguments);
 
         return $urlProvider->getUrls();
     }

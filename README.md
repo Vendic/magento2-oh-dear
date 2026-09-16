@@ -59,22 +59,31 @@ different domains. The `store_fronts` check reports on the availability of all t
   code to URLs" is enabled (e.g. `https://ivol.test/deurmat24_nl/`), so it matches the URLs Magento
   itself generates. URLs are deduplicated and the default store view is excluded, since Oh Dear already
   monitors that domain directly.
+- A second cron (`vendic_ohdear_recheck_failed_store_fronts`) runs every 2 minutes and rechecks only the
+  store fronts that failed during the last sweep, so recoveries and persisting outages are noticed within
+  minutes. It does nothing while everything is up.
 - A store front counts as reachable only when the request ends in an HTTP 200.
 - Only failing URLs are stored and reported. When one or more store fronts are down the check fails and
   the failed URLs (with their HTTP status or connection error) are attached as meta under `failed_urls`.
 - The check reports OK when the cron has not produced results yet (e.g. right after a deploy) or when
   there are no children store fronts to check, and warns when the cached results are older than 2 hours,
   so a broken cron does not go unnoticed.
+- Status changes go through the `CachedStatusResolver` (like the PHP-FPM count check): a failure or
+  recovery must persist for the status time threshold (default 5 minutes, configurable via the
+  `status_time_treshold` check config in `env.php`) before the reported status flips, which protects
+  against flapping store fronts.
 
-Disable it like any other check via `env.php`:
+Individual stores can be excluded from the check by listing their store codes in the `excluded_stores`
+check config in `env.php`, and the whole check can be disabled like any other:
 ```php
     'ohdear' => [
         \Vendic\OhDear\Checks\StoreFronts::class => [
-            'enabled' => false
+            'enabled' => false,
+            'excluded_stores' => ['store_code_one', 'store_code_two']
         ],
     ]
 ```
-Disabling the check also stops the cron from making any requests.
+Disabling the check also stops both crons from making any requests.
 
 ## Write your own checks
 1. Create a new class that implements `Vendic\OhDear\Interfaces\CheckInterface`, place it in 'Checks'. This class will contain the main logic of your check.
