@@ -56,7 +56,7 @@ different domains. The `store_fronts` check reports on the availability of all t
 - An hourly cron (`vendic_ohdear_check_store_fronts`) collects the link URL of every active store view
   and requests them in parallel with a 10 second timeout, following up to 5 redirects. The link URL
   respects a store's custom base URL when configured and includes the store code path when "add store
-  code to URLs" is enabled (e.g. `https://ivol.test/deurmat24_nl/`), so it matches the URLs Magento
+  code to URLs" is enabled, so it matches the URLs Magento
   itself generates. URLs are deduplicated and the default store view is excluded, since Oh Dear already
   monitors that domain directly.
 - A second cron (`vendic_ohdear_recheck_failed_store_fronts`) runs every 2 minutes and rechecks only the
