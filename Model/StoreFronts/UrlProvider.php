@@ -29,7 +29,10 @@ class UrlProvider
      */
     public function getUrls(): array
     {
-        $defaultStoreId = (int)$this->storeManager->getDefaultStoreView()?->getId();
+        $defaultStoreView = $this->storeManager->getDefaultStoreView();
+        $defaultStoreId = (int)$defaultStoreView?->getId();
+        // Store views without their own URL resolve to the default store view, which Oh Dear already monitors
+        $defaultStoreUrl = $defaultStoreView ? $this->getLinkUrl($defaultStoreView) : null;
         $urls = [];
 
         foreach ($this->storeManager->getStores() as $store) {
@@ -45,7 +48,7 @@ class UrlProvider
             }
 
             $url = $this->getLinkUrl($store);
-            if (!in_array($url, $urls, true)) {
+            if ($url !== $defaultStoreUrl && !in_array($url, $urls, true)) {
                 $urls[] = $url;
             }
         }
