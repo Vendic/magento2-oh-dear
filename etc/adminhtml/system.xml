@@ -17,6 +17,7 @@
                        showInWebsite="1"
                        showInStore="1">
                     <label>Oh Dear Health Check Secret</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
                 </field>
             </group>
         </section>
