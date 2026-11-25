@@ -33,6 +33,7 @@ class CheckStoreFrontsTest extends TestCase
 
     /**
      * @magentoDbIsolation enabled
+     * @magentoAppIsolation enabled
      * @magentoDataFixture Magento/Store/_files/second_store.php
      * @magentoConfigFixture fixture_second_store_store web/seo/use_rewrites 1
      * @magentoConfigFixture fixture_second_store_store web/secure/base_link_url https://second.example.com/
@@ -49,6 +50,7 @@ class CheckStoreFrontsTest extends TestCase
 
     /**
      * @magentoDbIsolation enabled
+     * @magentoAppIsolation enabled
      * @magentoDataFixture Magento/Store/_files/second_store.php
      * @magentoConfigFixture fixture_second_store_store web/seo/use_rewrites 1
      * @magentoConfigFixture fixture_second_store_store web/secure/base_link_url https://second.example.com/
